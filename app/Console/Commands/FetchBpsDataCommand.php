@@ -107,14 +107,13 @@ class FetchBpsDataCommand extends Command
                 if (!empty($valuesToUpsert)) {
                     BpsDatavalue::upsert(
                         $valuesToUpsert,
-                        ['dataset_id', 'vervar_label', 'turvar_label', 'turtahun_label', 'year'], // Kolom unik untuk dicek
-                        ['value', 'unit'] // Kolom yang di-update jika data sudah ada
+                        ['dataset_id', 'vervar_label', 'turvar_label', 'turtahun_label', 'year'],
+                        ['value', 'unit']
                     );
                     $this->info(" > Successfully stored data for year {$year}");
                 } else {
                     $this->warn(" > No processable data content for year {$year}");
                 }
-
             }
         }
 

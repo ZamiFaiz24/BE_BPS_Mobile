@@ -120,12 +120,13 @@ class DashboardContentController extends Controller
         $validatedData = $request->validate([
             'title'         => 'required|string|max:255',
             'content_body'  => 'nullable|string',
-            'file_url'      => 'nullable|url',
-            'image_url'     => 'nullable|url',
+            'file_url'      => 'nullable|url|max:1000',
+            'image_source_url' => 'nullable|url|required_if:upload_method,url',
+            'image_upload'  => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'author'        => 'nullable|string|max:255',
             'publish_date'  => 'nullable|date',
-            'source_url'    => 'nullable|url',
-            'description'   => 'nullable|string',
+            'source_url'    => 'nullable|url|max:1000',
+            'description'   => 'nullable|string|max:1000',
             'type'          => 'required|in:berita,publikasi,infografik',
         ]);
 

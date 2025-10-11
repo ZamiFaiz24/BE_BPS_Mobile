@@ -28,16 +28,7 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
     // Route untuk menampilkan halaman admin dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // [DIUBAH] Ganti metode dari POST ke GET dan sesuaikan namanya
-    Route::get('/fetch-bps-data', function () {
-        try {
-            Artisan::call('bps:fetch-data');
-            return redirect()->route('admin.dashboard')->with('status', 'Sukses! Proses sinkronisasi dan pengambilan data BPS telah berhasil.');
-        } catch (\Exception $e) {
-            Log::error('Manual BPS Fetch Failed: ' . $e->getMessage());
-            return redirect()->route('admin.dashboard')->with('error', 'Gagal memicu pembaruan data BPS.');
-        }
-    })->name('fetch.bps.get'); // <-- Nama disesuaikan menjadi 'fetch.bps.get'
+    Route::get('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
 
     // Route untuk menyimpan perubahan tipe insight per baris
     Route::patch('/datasets/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])
@@ -46,6 +37,10 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
     // Route untuk menampilkan detail data
     Route::get('/datasets/{dataset}', [DashboardController::class, 'showData'])
         ->name('datasets.show');
+
+    // Route untuk menghapus dataset beserta semua datanya
+    Route::delete('/datasets/{dataset}', [DashboardController::class, 'destroy'])
+        ->name('datasets.destroy');
 
     Route::resource('contents', DashboardContentController::class);
 });

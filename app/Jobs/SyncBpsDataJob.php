@@ -29,13 +29,20 @@ class SyncBpsDataJob implements ShouldQueue
     public function handle(BpsApiService $bpsApiService): void
     {
         Log::info("Memulai job sinkronisasi untuk: {$this->label}");
-        $bpsApiService->fetchAndStore(
+        $result = $bpsApiService->fetchData(
             $this->domain,
-            $this->variable,
+            [$this->variable],
             $this->tahunMulai,
             $this->tahunAkhir,
             $this->label
         );
-        Log::info("Selesai job sinkronisasi untuk: {$this->label}");
+
+        if (!empty($result['error'])) {
+            Log::error("Sinkronisasi gagal untuk: {$this->label}. Error: {$result['error']}");
+        } elseif ($result['added'] > 0) {
+            Log::info("Sinkronisasi selesai untuk: {$this->label}. Data baru: {$result['added']}, update: {$result['updated']}");
+        } else {
+            Log::info("Sinkronisasi selesai untuk: {$this->label}. Tidak ada data baru.");
+        }
     }
 }

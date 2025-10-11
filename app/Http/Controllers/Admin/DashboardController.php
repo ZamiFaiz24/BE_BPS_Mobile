@@ -6,11 +6,26 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BpsDataset;
 use App\Models\BpsDataValue;
+use App\Jobs\SyncBpsDataJob;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = \App\Models\BpsDataset::query();
+
+        // Filter subject
+        if ($request->filled('subject')) {
+            $query->where('subject', $request->subject);
+        }
+
+        // Search nama dataset
+        if ($request->filled('q')) {
+            $query->where('dataset_name', 'like', '%' . $request->q . '%');
+        }
+
+        $datasets = $query->orderBy('dataset_name')->get();
+
         // Ambil data statistik dari database
         $datasetCount = BpsDataset::count();
         $valueCount = BpsDataValue::count();
@@ -19,7 +34,6 @@ class DashboardController extends Controller
         if ($lastValue) {
             $lastSync = $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB';
         }
-        $datasets = BpsDataset::orderBy('dataset_name')->get();
 
         // Kirim semua data ke view
         return view('admin.dashboard', [
@@ -60,14 +74,44 @@ class DashboardController extends Controller
         return redirect()->route('admin.dashboard')->with('status', 'Semua perubahan tipe insight berhasil disimpan.');
     }
 
+    public function syncAllDatasets()
+    {
+        // 1. Baca daftar target dari file konfigurasi
+        $targets = config('bps_targets.datasets');
+
+        if (empty($targets)) {
+            return redirect()->back()->with('error', 'Tidak ada target dataset untuk disinkronkan.');
+        }
+
+        // 2. Looping untuk setiap target dan KIRIM TUGAS KE ANTRIAN
+        foreach ($targets as $target) {
+            SyncBpsDataJob::dispatch(
+                $target['params']['domain'],
+                $target['variable_id'],
+                $target['tahun_mulai'],
+                $target['tahun_akhir'],
+                $target['name']
+            );
+        }
+
+        // 3. Langsung berikan respon ke user, jangan menunggu proses selesai
+        return redirect()->route('admin.dashboard')->with('status', 'Semua dataset telah dimasukkan ke dalam antrian untuk disinkronkan.');
+    }
+
     public function showData(BpsDataset $dataset)
     {
-       
+
         $values = $dataset->values()->orderBy('year', 'desc')->get();
 
         return view('admin.datasets.show', [
             'dataset' => $dataset,
             'values' => $values,
         ]);
+    }
+    public function destroy(BpsDataset $dataset)
+    {
+        $dataset->delete();
+
+        return redirect()->route('admin.dashboard')->with('status', 'Dataset berhasil dihapus.');
     }
 }

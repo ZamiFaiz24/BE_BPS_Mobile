@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\BpsDatasetController;
 use App\Http\Controllers\API\BpsSyncController;
 use App\Http\Controllers\API\BpsDataController;
 use App\Http\Controllers\API\ContentController;
@@ -24,3 +25,5 @@ Route::get('/v1/news', [ContentController::class, 'news']);
 Route::get('/v1/infographics', [ContentController::class, 'infographics']);
 
 Route::get('/bps/publications/panther', [ContentController::class, 'getPublicationsWithPanther']);
+
+Route::get('/datasets/{dataset}', [BpsDatasetController::class, 'show']);
