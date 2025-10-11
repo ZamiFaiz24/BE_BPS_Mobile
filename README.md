@@ -1,65 +1,134 @@
-<<<<<<< HEAD
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="public/images/logo-bps.png" alt="Logo BPS Kebumen" width="200">
+</p>
+<h1 align="center">Backend API BPS Kebumen Mobile</h1>
+<p align="left">
+  Repositori backend (API) pendukung aplikasi Android BPS Kabupaten Kebumen.  
+  Dibangun menggunakan <strong>Laravel</strong> untuk menyediakan data statistik yang relevan, akurat, dan mudah diakses.
 </p>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📝 Tentang Proyek
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Backend ini bertugas untuk:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- 🔄 **Sinkronisasi Data:** Mengambil data secara periodik dari API BPS.  
+- 🗄️ **Penyimpanan Data:** Menyimpan data statistik dalam database lokal agar lebih cepat diakses.  
+- 📊 **Penyajian Data:** Menyediakan data yang sudah bersih dan terstruktur melalui RESTful API untuk aplikasi Android.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## ✨ Fitur Utama
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- ⚙️ **Sinkronisasi Otomatis:** Mengambil data dari berbagai dataset BPS berdasarkan daftar target di file konfigurasi.  
+- 🧵 **Proses Asinkron (Queue):** Menggunakan sistem antrian Laravel agar proses berat tidak menghambat aplikasi.  
+- 🌐 **RESTful API:** Menyediakan endpoint data statistik yang siap digunakan oleh aplikasi mobile.  
+- 🧭 **Admin Dashboard:** Memantau dataset, status sinkronisasi, serta menghapus dataset jika diperlukan.  
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## ⚙️ Arsitektur & Alur Kerja Sinkronisasi
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. **Definisi Target** — Semua dataset yang ingin disinkronkan didefinisikan di file `config/bps_targets.php`.  
+2. **Pemicu Sinkronisasi** — Pengguna menekan tombol *Sinkronisasi* pada Dashboard Admin.  
+3. **Dispatch Job** — `DashboardController` mengirimkan setiap dataset sebagai `SyncBpsDataJob` ke dalam antrian.  
+4. **Eksekusi Worker** — Worker (`php artisan queue:work`) mengambil job satu per satu dan menjalankan `BpsApiService` untuk mengambil data dari API BPS lalu menyimpannya ke database.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🛠️ Teknologi yang Digunakan
 
-## Contributing
+| Komponen | Teknologi |
+|-----------|------------|
+| Framework | Laravel |
+| Bahasa | PHP |
+| Database | MySQL / MariaDB |
+| Sistem Antrian | Database Queue (atau Redis untuk produksi) |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## 🚀 **Panduan Memulai Cepat (Instalasi & Konfigurasi Lokal)**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Ikuti langkah-langkah berikut untuk menjalankan proyek ini di lingkungan lokal Anda.
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 1. Clone Repositori
+### Buka terminal dan jalankan perintah berikut:
+```bash
+git clone [URL_REPO_ANDA]
+cd BE_BPS_Mobile
+```
 
-## License
+### 2. Install Dependencies
+### Pastikan Anda sudah menginstal Composer.
+```bash
+composer install
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-=======
-# BE_BPS_Mobile
->>>>>>> 75ba29c9e32d5fac6c7249df71695ec77b5d334c
+### 3. Siapkan File Environment
+### Salin file .env.example menjadi .env
+```bash
+cp .env.example .env
+````
+
+### 4. Konfigurasi .env
+### Buka file .env dan sesuaikan variabel berikut dengan konfigurasi lokal Anda:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=nama_database_anda
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### Masukkan API Key dari website BPS
+```
+BPS_API_KEY=kunci_api_bps_anda
+```
+
+### Pastikan koneksi queue adalah 'database'
+```
+QUEUE_CONNECTION=database
+```
+
+### 5. Generate Application Key
+### Ini adalah langkah penting untuk keamanan aplikasi Anda.
+```bash
+php artisan key:generate
+```
+
+### 6. Jalankan Migrasi Database
+### Perintah ini akan membuat semua tabel yang dibutuhkan
+```bash
+php artisan migrate
+```
+▶️ **Menjalankan Aplikasi**
+
+## Untuk menjalankan aplikasi, Anda perlu dua terminal yang berjalan bersamaan.
+
+## Terminal 1: Web Server
+```bash
+php artisan serve
+```
+### 🌐 Aplikasi Anda sekarang bisa diakses di http://127.0.0.1:8000
+
+## Terminal 2: Queue Worker
+```bash
+php artisan queue:work
+```
+### ⚙️ Worker ini akan memproses semua tugas sinkronisasi di belakang layar.
+
+---
+
+## ✅ Hasil Akhir
+Setelah seluruh proses konfigurasi selesai, aplikasi backend telah siap dijalankan.  
+Dashboard Admin dapat diakses untuk melakukan pengelolaan dataset dan proses sinkronisasi secara langsung.
+
+Dengan demikian, sistem ini telah mampu:
+- Mengambil data dari Web API BPS secara otomatis,  
+- Menyimpan hasilnya ke dalam database lokal, dan  
+- Menyajikan data terstruktur untuk aplikasi mobile.
+
+Sistem siap digunakan untuk tahap **pengujian** dan **pengembangan lanjutan**. 🎓
