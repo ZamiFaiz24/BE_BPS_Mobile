@@ -24,7 +24,8 @@ class DashboardController extends Controller
             $query->where('dataset_name', 'like', '%' . $request->q . '%');
         }
 
-        $datasets = $query->orderBy('dataset_name')->get();
+        $perPage = $request->get('per_page', 10); // default 10, bisa 25/50
+        $datasets = $query->orderBy('dataset_name')->paginate($perPage)->withQueryString();
 
         // Ambil data statistik dari database
         $datasetCount = BpsDataset::count();
@@ -98,7 +99,7 @@ class DashboardController extends Controller
         return redirect()->route('admin.dashboard')->with('status', 'Semua dataset telah dimasukkan ke dalam antrian untuk disinkronkan.');
     }
 
-    public function showData(BpsDataset $dataset)
+    public function show(BpsDataset $dataset)
     {
 
         $values = $dataset->values()->orderBy('year', 'desc')->get();
@@ -113,5 +114,37 @@ class DashboardController extends Controller
         $dataset->delete();
 
         return redirect()->route('admin.dashboard')->with('status', 'Dataset berhasil dihapus.');
+    }
+    public function edit(BpsDataset $dataset)
+    {
+        return view('admin.datasets.edit', compact('dataset'));
+    }
+
+    public function update(Request $request, BpsDataset $dataset)
+    {
+        $request->validate([
+            'insight_type' => 'required|string',
+            // tambahkan validasi lain jika perlu
+        ]);
+        $dataset->update([
+            'insight_type' => $request->insight_type,
+        ]);
+        return redirect()->route('admin.dashboard')->with('status', 'Tipe insight berhasil diubah.');
+    }
+    public function ajaxSearch(Request $request)
+    {
+        $query = BpsDataset::query();
+
+        if ($request->filled('subject')) {
+            $query->where('subject', $request->subject);
+        }
+        if ($request->filled('q')) {
+            $query->where('dataset_name', 'like', '%' . $request->q . '%');
+        }
+        $perPage = $request->get('per_page', 10);
+        $datasets = $query->orderBy('dataset_name')->paginate($perPage);
+
+        // Return partial blade (hanya tbody dan pagination)
+        return view('admin.datasets.partials.table', compact('datasets'))->render();
     }
 }

@@ -12,13 +12,12 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('dashboard')">
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
-                    {{-- TAMBAHKAN KODE DI BAWAH INI --}}
                     <x-nav-link :href="route('admin.contents.index')" :active="request()->routeIs('admin.contents.*')">
-                        {{ __('Content') }}
+                        {{ __('Konten') }}
                     </x-nav-link>
                 </div>
             </div>

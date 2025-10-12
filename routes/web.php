@@ -25,22 +25,16 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Route untuk menampilkan halaman admin dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
     Route::get('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
 
-    // Route untuk menyimpan perubahan tipe insight per baris
-    Route::patch('/datasets/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])
-        ->name('datasets.update_insight');
+    Route::get('/datasets/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('datasets.ajax-search');
 
-    // Route untuk menampilkan detail data
-    Route::get('/datasets/{dataset}', [DashboardController::class, 'showData'])
-        ->name('datasets.show');
-
-    // Route untuk menghapus dataset beserta semua datanya
-    Route::delete('/datasets/{dataset}', [DashboardController::class, 'destroy'])
-        ->name('datasets.destroy');
+    Route::patch('/datasets/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('datasets.update_insight');
+    Route::get('/datasets/{dataset}', [DashboardController::class, 'showData'])->name('datasets.show');
+    Route::delete('/datasets/{dataset}', [DashboardController::class, 'destroy'])->name('datasets.destroy');
+    Route::get('/datasets/{dataset}/edit', [DashboardController::class, 'edit'])->name('datasets.edit');
+    Route::patch('/datasets/{dataset}', [DashboardController::class, 'update'])->name('datasets.update');
 
     Route::resource('contents', DashboardContentController::class);
 });
