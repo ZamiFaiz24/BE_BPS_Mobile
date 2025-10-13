@@ -12,54 +12,75 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        // --- 1. LOGIKA QUERY UTAMA (berdasarkan parameter URL) ---
         $query = \App\Models\BpsDataset::query();
 
+        // Menggunakan 'where' karena kita hanya pilih satu per filter
         if ($request->filled('category')) {
-            $query->whereIn('category', (array) $request->category);
+            $query->where('category', $request->category);
         }
-
         if ($request->filled('subject')) {
-            $query->whereIn('subject', (array) $request->subject);
+            $query->where('subject', $request->subject);
         }
-
-        // Search nama dataset
         if ($request->filled('q')) {
             $query->where('dataset_name', 'like', '%' . $request->q . '%');
         }
 
-        $perPage = $request->get('per_page', 10); // default 10, bisa 25/50
-        $datasets = $query->orderBy('dataset_name')->paginate($perPage)->withQueryString();
+        $datasets = $query->orderBy('dataset_name')->paginate(10)->withQueryString();
 
-        // Ambil data statistik dari database
-        $datasetCount = BpsDataset::count();
-        $valueCount = BpsDataValue::count();
-        $lastValue = BpsDataValue::latest('updated_at')->first();
-        $lastSync = 'Belum pernah';
-        if ($lastValue) {
-            $lastSync = $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB';
-        }
+        // --- 2. DATA STATISTIK (Tidak berubah) ---
+        $datasetCount = \App\Models\BpsDataset::count();
+        $valueCount = \App\Models\BpsDataValue::count();
+        $lastValue = \App\Models\BpsDataValue::latest('updated_at')->first();
+        $lastSync = $lastValue ? $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum pernah';
 
-        // --- LOGIKA BARU UNTUK FILTER KATEGORI & SUBJECT ---
-        // Ambil semua kategori dan subject
-        $allDatasets = \App\Models\BpsDataset::select('category', 'subject')
-            ->whereNotNull('category')
-            ->get();
+        // --- 3. DATA UNTUK DROPDOWN FILTER DI MODAL ---
+        $filterCategories = \App\Models\BpsDataset::select('category')
+            ->whereNotNull('category')->distinct()->orderBy('category')->pluck('category');
 
-        // Group by category, lalu mapping ke array of object
-        $filterData = $allDatasets->groupBy('category')
-            ->map(function ($group, $categoryKey) {
-                return $group->pluck('subject')->unique()->values();
-            });
+        $allSubjects = \App\Models\BpsDataset::select('subject')
+            ->whereNotNull('subject')->distinct()->orderBy('subject')->pluck('subject');
 
-        // Kirim semua data ke view
+        // --- 4. KIRIM SEMUA DATA KE VIEW ---
         return view('admin.dashboard', [
             'datasetCount' => $datasetCount,
             'valueCount' => $valueCount,
             'lastSync' => $lastSync,
             'datasets' => $datasets,
-            'filterCategories' => $filterData, // variabel baru untuk komponen filter
-            // variabel lain jika perlu
+            'filterCategories' => $filterCategories,
+            'allSubjects' => $allSubjects,
         ]);
+    }
+
+    /**
+     * Method 2: Menangani request filter via JavaScript (AJAX).
+     * Tugasnya hanya mengembalikan potongan HTML dari tabel & paginasi.
+     */
+    public function ajaxFilter(Request $request)
+    {
+        $datasets = $this->getFilteredDatasets($request);
+        return view('admin.datasets.partials.table-and-pagination', compact('datasets'));
+    }
+
+    /**
+     * Method 3: Helper private untuk query dataset.
+     * Menghindari duplikasi kode antara index() dan ajaxFilter().
+     */
+    private function getFilteredDatasets(Request $request)
+    {
+        $query = BpsDataset::query();
+
+        if ($request->filled('category')) {
+            $query->whereIn('category', (array) $request->category);
+        }
+        if ($request->filled('subject')) {
+            $query->whereIn('subject', (array) $request->subject);
+        }
+        if ($request->filled('q')) {
+            $query->where('dataset_name', 'like', '%' . $request->q . '%');
+        }
+
+        return $query->orderBy('dataset_name')->paginate(10)->withQueryString();
     }
 
     public function updateInsightType(Request $request, BpsDataset $dataset)

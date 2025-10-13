@@ -94,11 +94,36 @@
             <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
         </select>
         <span class="text-sm text-[#0093DD] ml-2">data per halaman</span>
-        <input type="hidden" name="subject" value="{{ request('subject') }}">
+
         <input type="hidden" name="q" value="{{ request('q') }}">
+        @if(request('category'))
+            <input type="hidden" name="category" value="{{ request('category') }}">
+        @endif
+        @if(is_array(request('subject')))
+            @foreach(request('subject') as $subj)
+                <input type="hidden" name="subject[]" value="{{ $subj }}">
+            @endforeach
+        @endif
     </form>
 </div>
 
 {{-- <div class="mt-4">
     {{ $datasets->links('vendor.pagination.tailwind') }}
 </div> --}}
+
+{{-- Alpine.js filterModal --}}
+<script>
+function filterModal() {
+    return {
+        open: false,
+        categories: @json($categories ?? []),
+        selectedCategory: @json(request('category')) || null,
+        selectedSubject: @json((array) request('subject')) || [],
+
+        resetSelections() {
+            this.selectedCategory = null;
+            this.selectedSubject = [];
+        }
+    }
+}
+</script>

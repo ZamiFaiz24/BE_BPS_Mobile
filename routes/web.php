@@ -26,15 +26,19 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
 
-    Route::get('/datasets/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('datasets.ajax-search');
-
-    Route::patch('/datasets/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('datasets.update_insight');
-    Route::get('/datasets/{dataset}', [DashboardController::class, 'showData'])->name('datasets.show');
-    Route::delete('/datasets/{dataset}', [DashboardController::class, 'destroy'])->name('datasets.destroy');
-    Route::get('/datasets/{dataset}/edit', [DashboardController::class, 'edit'])->name('datasets.edit');
-    Route::patch('/datasets/{dataset}', [DashboardController::class, 'update'])->name('datasets.update');
+    // Kelompokkan semua route dataset
+    Route::prefix('datasets')->name('datasets.')->group(function () {
+        Route::get('/ajax-filter', [DashboardController::class, 'ajaxFilter'])->name('ajax-filter');
+        Route::get('/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('ajax-search');
+        Route::patch('/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('update_insight');
+        Route::get('/{dataset}', [DashboardController::class, 'show'])->name('show');
+        Route::delete('/{dataset}', [DashboardController::class, 'destroy'])->name('destroy');
+        Route::get('/{dataset}/edit', [DashboardController::class, 'edit'])->name('edit');
+        Route::patch('/{dataset}', [DashboardController::class, 'update'])->name('update');
+    });
 
     Route::resource('contents', DashboardContentController::class);
 });
