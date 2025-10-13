@@ -81,23 +81,8 @@
                     <div x-data="filterModal()" class="relative">
                         <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-                                {{-- Tombol Filter (Biru) --}}
-                                <button type="button"
-                                    class="inline-flex items-center px-4 py-2 text-white rounded-md text-sm font-medium transition"
-                                    style="background-color: #0093DD;"
-                                    @click="open = true">
-                                    <x-heroicon-o-adjustments-horizontal class="w-5 h-5 mr-2" />
-                                    Filter
-                                </button>
-                                {{-- Tombol Reset Filter (Oranye) --}}
-                                @if(request('category') || request('subject'))
-                                    <a href="{{ route('admin.dashboard') }}"
-                                        class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition"
-                                        style="background-color: #EB891C; color: #fff;">
-                                        <x-heroicon-o-x-mark class="w-5 h-5 mr-2" />
-                                        Reset Filter
-                                    </a>
-                                @endif
+                                {{-- Komponen Modal Filter --}}
+                                <x-modal_filter :categories="$filterCategories" />
                                 {{-- Search --}}
                                 <div class="relative w-full md:w-64">
                                     <input type="text" name="q" id="search-dataset" value="{{ request('q') }}"
@@ -290,5 +275,4 @@
     }
     </script>
 
-    <x-modal_fillter :categories="$categories" />
 </x-app-layout>

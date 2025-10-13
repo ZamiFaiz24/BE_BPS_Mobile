@@ -14,14 +14,12 @@ class DashboardController extends Controller
     {
         $query = \App\Models\BpsDataset::query();
 
-        // Filter category
         if ($request->filled('category')) {
-            $query->where('category', $request->category);
+            $query->whereIn('category', (array) $request->category);
         }
 
-        // Filter subject
         if ($request->filled('subject')) {
-            $query->where('subject', $request->subject);
+            $query->whereIn('subject', (array) $request->subject);
         }
 
         // Search nama dataset
@@ -41,8 +39,17 @@ class DashboardController extends Controller
             $lastSync = $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB';
         }
 
-        $categories = BpsDataset::select('category')->distinct()->pluck('category');
-        $subjects = BpsDataset::select('subject')->distinct()->pluck('subject');
+        // --- LOGIKA BARU UNTUK FILTER KATEGORI & SUBJECT ---
+        // Ambil semua kategori dan subject
+        $allDatasets = \App\Models\BpsDataset::select('category', 'subject')
+            ->whereNotNull('category')
+            ->get();
+
+        // Group by category, lalu mapping ke array of object
+        $filterData = $allDatasets->groupBy('category')
+            ->map(function ($group, $categoryKey) {
+                return $group->pluck('subject')->unique()->values();
+            });
 
         // Kirim semua data ke view
         return view('admin.dashboard', [
@@ -50,8 +57,8 @@ class DashboardController extends Controller
             'valueCount' => $valueCount,
             'lastSync' => $lastSync,
             'datasets' => $datasets,
-            'categories' => $categories,
-            'subjects' => $subjects,
+            'filterCategories' => $filterData, // variabel baru untuk komponen filter
+            // variabel lain jika perlu
         ]);
     }
 

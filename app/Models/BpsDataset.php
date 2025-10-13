@@ -21,4 +21,10 @@ class BpsDataset extends Model
     {
         return $this->hasMany(BpsDatadimension::class, 'dataset_id');
     }
+
+    public const CATEGORIES = [
+        1 => 'Statistik Demografi dan Sosial',
+        2 => 'Statistik Ekonomi dan Perdagangan',
+        3 => 'Statistik Pertanian dan Lingkungan',
+    ];
 }
