@@ -12,16 +12,20 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // --- 1. LOGIKA QUERY UTAMA (berdasarkan parameter URL) ---
+        // --- 1. LOGIKA QUERY UTAMA ---
         $query = \App\Models\BpsDataset::query();
 
-        // Menggunakan 'where' karena kita hanya pilih satu per filter
+        // Filter berdasarkan SATU kategori (dari radio button)
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
+
+        // Filter berdasarkan BANYAK subject (dari checkbox)
         if ($request->filled('subject')) {
-            $query->where('subject', $request->subject);
+            // whereIn siap menerima array dari checkbox 'subject[]'
+            $query->whereIn('subject', (array) $request->subject);
         }
+
         if ($request->filled('q')) {
             $query->where('dataset_name', 'like', '%' . $request->q . '%');
         }
@@ -34,12 +38,18 @@ class DashboardController extends Controller
         $lastValue = \App\Models\BpsDataValue::latest('updated_at')->first();
         $lastSync = $lastValue ? $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum pernah';
 
-        // --- 3. DATA UNTUK DROPDOWN FILTER DI MODAL ---
-        $filterCategories = \App\Models\BpsDataset::select('category')
-            ->whereNotNull('category')->distinct()->orderBy('category')->pluck('category');
-
-        $allSubjects = \App\Models\BpsDataset::select('subject')
-            ->whereNotNull('subject')->distinct()->orderBy('subject')->pluck('subject');
+        // --- 3. DATA UNTUK JAVASCRIPT DI MODAL (Struktur Paling Penting) ---
+        $categories = \App\Models\BpsDataset::select('category', 'subject')
+            ->whereNotNull('category')->get()
+            ->groupBy('category')
+            ->map(function ($group, $categoryKey) {
+                return [
+                    'id' => $categoryKey,
+                    'name' => \App\Models\BpsDataset::CATEGORIES[$categoryKey] ?? 'Kategori ' . $categoryKey,
+                    'subjects' => $group->pluck('subject')->unique()->values()
+                ];
+            })
+            ->sortBy('id')->values();
 
         // --- 4. KIRIM SEMUA DATA KE VIEW ---
         return view('admin.dashboard', [
@@ -47,8 +57,7 @@ class DashboardController extends Controller
             'valueCount' => $valueCount,
             'lastSync' => $lastSync,
             'datasets' => $datasets,
-            'filterCategories' => $filterCategories,
-            'allSubjects' => $allSubjects,
+            'categories' => $categories,
         ]);
     }
 

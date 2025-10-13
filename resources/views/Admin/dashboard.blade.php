@@ -2,7 +2,7 @@
     <div class="bg-gray-100 min-h-screen">
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Admin Dashboard') }}
+                {{ __('Manajemen Dataset BPS') }}
             </h2>
         </x-slot>
 
@@ -100,42 +100,38 @@
                 </div> 
 
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="p-6 sm:px-10 border-b border-gray-200">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-800">Manajemen Dataset BPS</h3>
-                            </div>
-                            <a href="{{ route('admin.sync.all') }}" class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 text-white rounded-md text-sm font-medium" style="background-color: #0093DD;">
-                                <x-heroicon-o-arrow-path class="w-4 h-4 mr-2" />
-                                Sinkronisasi Data
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                    <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-2">
+                            {{-- Tombol Filter --}}
                             <button type="button" id="open-filter-btn"
                                 class="inline-flex items-center px-4 py-2 rounded-full font-semibold shadow-sm text-white bg-[#0093DD] hover:bg-[#0070C0] transition">
                                 <x-heroicon-o-adjustments-horizontal class="w-5 h-5 mr-2" />
                                 Filter
                             </button>
+                            {{-- Tombol Reset --}}
                             @if(request('category') || request('subject'))
                                 <a href="{{ route('admin.dashboard') }}"
-                                    class="inline-flex items-center px-4 py-2 text-[#EB891C] border-2 border-[#EB891C] rounded-full bg-white font-semibold shadow-sm hover:bg-[#EB891C] hover:text-white transition ml-2">
+                                    class="inline-flex items-center px-4 py-2 text-[#EB891C] border-2 border-[#EB891C] rounded-full bg-white font-semibold shadow-sm hover:bg-[#EB891C] hover:text-white transition">
                                     <x-heroicon-o-x-mark class="w-5 h-5 mr-2" />
                                     Reset
                                 </a>
                             @endif
+                            {{-- Tombol Sinkronisasi --}}
+                            <a href="{{ route('admin.sync.all') }}"
+                                class="inline-flex items-center px-4 py-2 text-white bg-[#68B92E] rounded-full font-semibold shadow-sm hover:bg-[#4E8C1A] transition">
+                                <x-heroicon-o-arrow-path class="w-5 h-5 mr-2" />
+                                Sinkronisasi Data
+                            </a>
                         </div>
                         {{-- Form Pencarian Sederhana --}}
-                        <form method="GET" action="{{ route('admin.dashboard') }}" class="relative ...">
-                            <input type="text" id="search-input" name="q" value="{{ request('q') }}" placeholder="Cari..." ...>
-                            <span class="absolute ..."><x-heroicon-o-magnifying-glass ... /></span>
+                        <form method="GET" action="{{ route('admin.dashboard') }}" class="relative mt-4 md:mt-0">
+                            <input type="text" id="search-input" name="q" value="{{ request('q') }}" placeholder="Cari..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-[#0093DD] focus:border-[#0093DD] w-64">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><x-heroicon-o-magnifying-glass class="w-5 h-5" /></span>
                         </form>
                     </div>
 
                     {{-- PANGGIL KOMPONEN MODAL DI SINI --}}
-                    <x-modal-filter :categories="$filterCategories" :subjects="$allSubjects" />
+                    <x-modal-filter :categories="$categories" />
 
                     {{-- 2. KONTENER KONTEN DINAMIS --}}
                     <div id="dataset-container">
