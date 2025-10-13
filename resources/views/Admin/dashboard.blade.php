@@ -112,16 +112,13 @@
                         </div>
                     </div>
 
-                  {{-- AREA KONTROL: Tombol Filter & Search --}}
                     <div class="p-6 border-b border-gray-200 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            {{-- Tombol Filter --}}
                             <button type="button" id="open-filter-btn"
                                 class="inline-flex items-center px-4 py-2 rounded-full font-semibold shadow-sm text-white bg-[#0093DD] hover:bg-[#0070C0] transition">
                                 <x-heroicon-o-adjustments-horizontal class="w-5 h-5 mr-2" />
                                 Filter
                             </button>
-                            {{-- Tombol Reset di luar modal, hanya muncul jika filter aktif --}}
                             @if(request('category') || request('subject'))
                                 <a href="{{ route('admin.dashboard') }}"
                                     class="inline-flex items-center px-4 py-2 text-[#EB891C] border-2 border-[#EB891C] rounded-full bg-white font-semibold shadow-sm hover:bg-[#EB891C] hover:text-white transition ml-2">
@@ -138,11 +135,9 @@
                     </div>
 
                     {{-- PANGGIL KOMPONEN MODAL DI SINI --}}
-                    {{-- Kita oper data dari controller ke dalam komponen --}}
                     <x-modal-filter :categories="$filterCategories" :subjects="$allSubjects" />
 
                     {{-- 2. KONTENER KONTEN DINAMIS --}}
-                    {{-- Bagian ini akan di-update oleh AJAX dari modal filter dan pencarian --}}
                     <div id="dataset-container">
                         @include('admin.datasets.partials.table-and-pagination', ['datasets' => $datasets])
                     </div>
