@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="bg-gray-100 min-h-screen">
+    <div class="bg-gray-100 min-h-screen" x-data="filterModal()">
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Admin Dashboard') }}
@@ -23,30 +23,36 @@
 
                 {{-- BAGIAN 1: KARTU STATISTIK UTAMA --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {{-- Card 1: Dataset Dilacak --}}
+                    {{-- Card 1: Dataset Tersimpan (Oranye) --}}
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="flex-shrink-0 bg-yellow-500 text-white rounded-full p-3">
-                            <x-heroicon-o-circle-stack class="w-6 h-6" />
+                        <div class="flex-shrink-0" style="background-color: #EB891C;">
+                            <div class="text-white rounded-full p-3">
+                                <x-heroicon-o-circle-stack class="w-6 h-6" />
+                            </div>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Dataset Tersimpan</p>
                             <p class="text-2xl font-bold text-gray-900">{{ $datasetCount }}</p>
                         </div>
                     </div>
-                    {{-- Card 2: Total Baris Data --}}
+                    {{-- Card 2: Total Baris Data (Hijau) --}}
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="flex-shrink-0 bg-green-500 text-white rounded-full p-3">
-                            <x-heroicon-o-document-text class="w-6 h-6" />
+                        <div class="flex-shrink-0" style="background-color: #68B92E;">
+                            <div class="text-white rounded-full p-3">
+                                <x-heroicon-o-document-text class="w-6 h-6" />
+                            </div>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Total Baris Data</p>
                             <p class="text-2xl font-bold text-gray-900">{{ number_format($valueCount) }}</p>
                         </div>
                     </div>
-                    {{-- Card 3: Sinkronisasi Terakhir --}}
+                    {{-- Card 3: Sinkronisasi Terakhir (Biru) --}}
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="flex-shrink-0 bg-blue-500 text-white rounded-full p-3">
-                            <x-heroicon-o-arrow-path class="w-6 h-6" />
+                        <div class="flex-shrink-0" style="background-color: #0093DD;">
+                            <div class="text-white rounded-full p-3">
+                                <x-heroicon-o-arrow-path class="w-6 h-6" />
+                            </div>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Sinkronisasi Terakhir</p>
@@ -61,28 +67,37 @@
                             <div>
                                 <h3 class="text-xl font-semibold text-gray-800">Manajemen Dataset BPS</h3>
                             </div>
+                            {{-- Tombol Sinkronisasi Data (Biru) --}}
                             <a href="{{ route('admin.sync.all') }}"
-                                class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-widest rounded-md shadow-lg">
+                                class="mt-4 md:mt-0 inline-flex items-center px-4 py-2"
+                                style="background-color: #0093DD; color: #fff;">
                                 <x-heroicon-o-arrow-path class="w-4 h-4 mr-2" />
                                 Sinkronisasi Data
                             </a>
                         </div>
                     </div>
 
-                    {{-- FILTER & SEARCH --}}
-                    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-                            {{-- Filter Subject --}}
-                            <form method="GET" action="{{ route('admin.dashboard') }}" class="flex gap-2 items-center w-full">
-                                <select name="subject" id="subject"
-                                    class="border border-gray-300 bg-gray-50 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 transition">
-                                    <option value="">Semua Subject</option>
-                                    @foreach($datasets->pluck('subject')->unique() as $subject)
-                                        <option value="{{ $subject }}" {{ request('subject') == $subject ? 'selected' : '' }}>
-                                            {{ $subject }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                    {{-- FILTER & SEARCH + MODAL dibungkus x-data --}}
+                    <div x-data="filterModal()" class="relative">
+                        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
+                                {{-- Tombol Filter (Biru) --}}
+                                <button type="button"
+                                    class="inline-flex items-center px-4 py-2 text-white rounded-md text-sm font-medium transition"
+                                    style="background-color: #0093DD;"
+                                    @click="open = true">
+                                    <x-heroicon-o-adjustments-horizontal class="w-5 h-5 mr-2" />
+                                    Filter
+                                </button>
+                                {{-- Tombol Reset Filter (Oranye) --}}
+                                @if(request('category') || request('subject'))
+                                    <a href="{{ route('admin.dashboard') }}"
+                                        class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition"
+                                        style="background-color: #EB891C; color: #fff;">
+                                        <x-heroicon-o-x-mark class="w-5 h-5 mr-2" />
+                                        Reset Filter
+                                    </a>
+                                @endif
                                 {{-- Search --}}
                                 <div class="relative w-full md:w-64">
                                     <input type="text" name="q" id="search-dataset" value="{{ request('q') }}"
@@ -93,14 +108,77 @@
                                         <x-heroicon-o-magnifying-glass class="w-4 h-4" />
                                     </span>
                                 </div>
-                                <button type="submit" class="hidden"></button>
-                            </form>
+                            </div>
+                        </div>
+
+                        {{-- Modal Filter Tailwind + Alpine.js --}}
+                        <div id="filterModal"
+                             x-show="open"
+                             x-cloak
+                             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+                                <form method="GET" action="{{ route('admin.dashboard') }}">
+                                    <div class="flex justify-between items-center border-b px-6 py-4">
+                                        <h5 class="text-lg font-semibold">Filter Dataset</h5>
+                                        <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600">
+                                            <!-- svg close -->
+                                        </button>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        {{-- Kategori --}}
+                                        <div class="mb-4">
+                                            <label class="block mb-1 font-medium">Kategori</label>
+                                            <template x-for="(subjects, cat) in categories" :key="cat">
+                                                <div class="flex items-center mb-1">
+                                                    <input type="radio" :id="'cat-'+cat" name="category" :value="cat"
+                                                        x-model="selectedCategory"
+                                                        class="form-radio text-blue-600 focus:ring-blue-500" />
+                                                    <label :for="'cat-'+cat" class="ml-2" x-text="cat"></label>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        {{-- Subject --}}
+                                        <div class="mb-4" x-show="selectedCategory">
+                                            <label class="block mb-1 font-medium">Subject</label>
+                                            <template x-if="selectedCategory">
+                                                <template x-for="subj in categories[selectedCategory]" :key="subj">
+                                                    <div class="flex items-center mb-1">
+                                                        <input type="radio" :id="'subj-'+subj" name="subject" :value="subj"
+                                                            x-model="selectedSubject"
+                                                            class="form-radio text-blue-600 focus:ring-blue-500" />
+                                                        <label :for="'subj-'+subj" class="ml-2" x-text="subj"></label>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end border-t px-6 py-4 gap-2">
+                                        <button type="button" @click="
+                                            selectedCategory = '';
+                                            selectedSubject = '';
+                                            $nextTick(() => { $el.closest('form').submit(); });
+                                        "
+                                        class="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300">Reset</button>
+                                        <button type="button" @click="open = false" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">Batal</button>
+                                        {{-- Tombol Terapkan di Modal (Hijau) --}}
+                                        <button type="submit"
+                                            class="px-4 py-2 rounded"
+                                            style="background-color: #68B92E; color: #fff;">
+                                            Terapkan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
                     {{-- TABEL DATASET --}}
                     <div class="overflow-x-auto rounded-lg shadow">
                         @include('admin.datasets.partials.table', ['datasets' => $datasets])
+                    </div>
+
+                    <div class="mt-4">
+                        {{ $datasets->links('vendor.pagination.tailwind') }}
                     </div>
                 </div>
 
@@ -192,4 +270,25 @@
         });
     </script>
 
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script>
+    function filterModal() {
+        return {
+            open: false,
+            categories: @json(
+                \App\Models\BpsDataset::all()
+                    ->groupBy('category')
+                    ->map(fn($g) => $g->pluck('subject')->unique()->values())
+            ),
+            selectedCategory: '{{ request('category') }}',
+            selectedSubject: '{{ request('subject') }}',
+            resetFilter() {
+                this.selectedCategory = '';
+                this.selectedSubject = '';
+            }
+        }
+    }
+    </script>
+
+    <x-modal_fillter :categories="$categories" />
 </x-app-layout>

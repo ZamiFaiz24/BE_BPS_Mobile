@@ -14,6 +14,11 @@ class DashboardController extends Controller
     {
         $query = \App\Models\BpsDataset::query();
 
+        // Filter category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
         // Filter subject
         if ($request->filled('subject')) {
             $query->where('subject', $request->subject);
@@ -36,12 +41,17 @@ class DashboardController extends Controller
             $lastSync = $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB';
         }
 
+        $categories = BpsDataset::select('category')->distinct()->pluck('category');
+        $subjects = BpsDataset::select('subject')->distinct()->pluck('subject');
+
         // Kirim semua data ke view
         return view('admin.dashboard', [
             'datasetCount' => $datasetCount,
             'valueCount' => $valueCount,
             'lastSync' => $lastSync,
             'datasets' => $datasets,
+            'categories' => $categories,
+            'subjects' => $subjects,
         ]);
     }
 
