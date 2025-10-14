@@ -41,6 +41,12 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::resource('contents', DashboardContentController::class);
+
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('settings');
+        Route::post('/', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
+        Route::get('/backup', [\App\Http\Controllers\Admin\SettingController::class, 'backup'])->name('settings.backup');
+    });
 });
 
 require __DIR__ . '/auth.php';
