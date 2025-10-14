@@ -1,10 +1,10 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-[#0093DD]/20 shadow-sm">
+<nav x-data="{ open: false }" class="bg-white border-b border-[#0093DD]/20 shadow-sm py-2">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <!-- Logo -->
             <div class="shrink-0 flex items-center">
                 <a href="{{ route('dashboard') }}">
-                    <img src="{{ asset('images/logo-bps.png') }}" alt="Logo BPS" class="block h-[64px] w-auto">
+                    <img src="{{ asset('images/logo-bps.png') }}" alt="Logo BPS" class="block h-[76px] w-auto">
                 </a>
             </div>
 
@@ -12,7 +12,7 @@
             <div class="flex flex-1 justify-end">
                 <div class="hidden space-x-4 sm:-my-px sm:flex">
                     @php
-                        $baseClass = 'flex items-center gap-x-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200';
+                        $baseClass = 'flex items-center gap-x-2 rounded-lg px-4 py-1 text-sm font-semibold transition-all duration-200';
                         $inactiveClass = 'text-gray-600 hover:bg-gray-100 hover:text-gray-900';
                         $activeClass = 'bg-[#0093DD] text-white shadow-sm';
                     @endphp

@@ -33,9 +33,6 @@ class BpsApiService
         $baseUrl = "https://webapi.bps.go.id/v1/api/list/model/{$model}/lang/ind";
         $url = "{$baseUrl}{$urlPath}/key/{$key}";
 
-        // =================================================================
-        // LOG "MATA-MATA" 1: Catat URL yang akan kita panggil
-        // =================================================================
         Log::info('Attempting to fetch BPS URL: ' . $url);
 
         try {

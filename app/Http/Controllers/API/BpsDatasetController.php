@@ -14,30 +14,17 @@ use App\Services\DatasetHandlers\CategoryBasedStatisticHandler;
 
 class BpsDatasetController extends Controller
 {
-    /**
-     * Peta yang menghubungkan ID Dataset dengan Kelas "Spesialis" (Handler) yang sesuai.
-     * Anda hanya perlu mendaftarkan setiap dataset baru di sini.
-     */
+    
     protected $handlerMapping = [
-        // ID 5 akan ditangani oleh spesialis data Penduduk per Wilayah & Gender
-        5  => PopulationByAgeGroupAndGenderHandler::class, // <-- DIUBAH
+        5  => PopulationByAgeGroupAndGenderHandler::class, 
 
-        // ID 6 dan 10 akan ditangani oleh spesialis data per Gender
         6  => GenderBasedStatisticHandler::class,
         10 => GenderBasedStatisticHandler::class,
 
-        // ID 7 dan 9 akan ditangani oleh spesialis data per Kategori
         7  => CategoryBasedStatisticHandler::class,
         9  => CategoryBasedStatisticHandler::class,
     ];
 
-    /**
-     * Menampilkan data lengkap (tabel, grafik, insight) untuk sebuah dataset.
-     * Endpoint ini akan diakses melalui: GET /api/datasets/{dataset}
-     *
-     * @param  \App\Models\BpsDataset $dataset
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function show(BpsDataset $dataset)
     {
         // 1. Cek apakah ada "spesialis" yang terdaftar untuk dataset ini di peta.

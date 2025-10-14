@@ -20,81 +20,44 @@
                         {{ session('error') }}
                     </div>
                 @endif
-
+                
                 {{-- BAGIAN 1: KARTU STATISTIK UTAMA --}}
-
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
                     {{-- Card 1: Dataset Tersimpan (Oranye) --}}
-
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-
                         <div class="flex-shrink-0" style="background-color: #EB891C;">
-
                             <div class="text-white rounded-full p-3">
-
                                 <x-heroicon-o-circle-stack class="w-6 h-6" />
-
                             </div>
-
                         </div>
-
                         <div class="ml-4">
-
                             <p class="text-sm text-gray-500">Dataset Tersimpan</p>
-
                             <p class="text-2xl font-bold text-gray-900">{{ $datasetCount }}</p>
-
                         </div>
-
                     </div>
-
                     {{-- Card 2: Total Baris Data (Hijau) --}}
-
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-
                         <div class="flex-shrink-0" style="background-color: #68B92E;">
-
                             <div class="text-white rounded-full p-3">
-
                                 <x-heroicon-o-document-text class="w-6 h-6" />
-
                             </div>
-
                         </div>
-
                         <div class="ml-4">
-
                             <p class="text-sm text-gray-500">Total Baris Data</p>
-
                             <p class="text-2xl font-bold text-gray-900">{{ number_format($valueCount) }}</p>
-
                         </div>
-
                     </div>
-
                     {{-- Card 3: Sinkronisasi Terakhir (Biru) --}}
-
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-
                         <div class="flex-shrink-0" style="background-color: #0093DD;">
-
                             <div class="text-white rounded-full p-3">
-
                                 <x-heroicon-o-arrow-path class="w-6 h-6" />
-
                             </div>
-
                         </div>
-
                         <div class="ml-4">
-
                             <p class="text-sm text-gray-500">Sinkronisasi Terakhir</p>
-
                             <p class="text-2xl font-bold text-gray-900">{{ $lastSync }}</p>
-
                         </div>
-
                     </div>
 
                 </div> 
