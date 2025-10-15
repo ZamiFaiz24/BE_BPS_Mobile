@@ -26,4 +26,8 @@ Route::get('/v1/infographics', [ContentController::class, 'infographics']);
 
 Route::get('/bps/publications/panther', [ContentController::class, 'getPublicationsWithPanther']);
 
-Route::get('/datasets/{dataset}', [BpsDatasetController::class, 'show']);
+Route::prefix('datasets')->group(function () {
+    Route::get('{dataset}', [\App\Http\Controllers\API\BpsDatasetController::class, 'show']);
+    Route::get('{dataset}/history', [\App\Http\Controllers\API\BpsDatasetController::class, 'history']);
+    Route::get('{dataset}/insights', [\App\Http\Controllers\API\BpsDatasetController::class, 'insights']);
+});

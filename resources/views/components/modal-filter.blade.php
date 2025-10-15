@@ -1,9 +1,9 @@
 @props(['categories'])
 
-<div id="filter-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-40 backdrop-blur-sm hidden">
+<div id="filter-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black bg-opacity-40 backdrop-blur-sm hidden">
     <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#0093DD]/10 relative overflow-hidden animate-fade-in">
         {{-- Header Modal --}}
-        <div class="flex items-center gap-4 px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-[#0093DD]/10 to-white">
+        <div class="flex items-center gap-4 px-8 py-6 border-b-2 border-[#0093DD]/30 bg-gradient-to-r from-[#0093DD]/30 via-[#0093DD]/10 to-white shadow-sm relative">
             <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-[#0093DD]/10 shadow">
                 <svg class="w-7 h-7 text-[#0093DD]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-7 7V19a1 1 0 01-2 0v-5.293l-7-7A1 1 0 013 6V4z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -29,10 +29,18 @@
                     <label class="block mb-3 text-base font-semibold text-[#0093DD]">Pilih Satu Kategori</label>
                     <div class="flex flex-wrap gap-3" id="category-radio-group">
                         @foreach($categories as $cat)
-                            <label class="flex items-center gap-3 px-4 py-2 rounded-xl border border-[#0093DD]/30 bg-[#F5FAFF] cursor-pointer shadow-sm transition
-                                hover:border-[#0093DD] hover:bg-[#E6F3FB] focus-within:ring-2 focus-within:ring-[#0093DD]">
-                                <input type="radio" name="category" value="{{ $cat['id'] }}" class="form-radio text-[#0093DD] focus:ring-[#0093DD]" {{ request('category') == $cat['id'] ? 'checked' : '' }}>
-                                <span class="font-medium text-[#0093DD]">{{ $cat['name'] }}</span>
+                            @php
+                                // Tentukan warna berdasarkan ID kategori
+                                $colorClass = match($cat['id']) {
+                                    1 => 'border-[#0093DD]/30 bg-[#F5FAFF] text-[#0093DD] hover:border-[#0093DD] hover:bg-[#E6F3FB] focus-within:ring-[#0093DD]',
+                                    2 => 'border-[#EB891C]/30 bg-[#FFF8F2] text-[#EB891C] hover:border-[#EB891C] hover:bg-[#FDF1E3] focus-within:ring-[#EB891C]',
+                                    3 => 'border-[#68B92E]/30 bg-[#F7FAF3] text-[#68B92E] hover:border-[#68B92E] hover:bg-[#EAF7E3] focus-within:ring-[#68B92E]',
+                                    default => 'border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50 focus-within:ring-gray-400'
+                                };
+                            @endphp
+                            <label class="flex items-center gap-3 px-4 py-2 rounded-xl border cursor-pointer shadow-sm transition {{ $colorClass }}">
+                                <input type="radio" name="category" value="{{ $cat['id'] }}" class="form-radio focus:ring-0" {{ request('category') == $cat['id'] ? 'checked' : '' }}>
+                                <span class="font-medium">{{ $cat['name'] }}</span>
                             </label>
                         @endforeach
                     </div>
@@ -83,10 +91,9 @@ document.addEventListener('DOMContentLoaded', function () {
         category.subjects.forEach(subjectName => {
             const isChecked = previouslySelectedSubjects.includes(subjectName) ? 'checked' : '';
             subjectGroup.innerHTML += `
-                <label class="flex items-center gap-3 px-4 py-2 rounded-xl border border-[#68B92E]/30 bg-[#F7FAF3] cursor-pointer shadow-sm transition
-                    hover:border-[#68B92E] hover:bg-[#EAF7E3] focus-within:ring-2 focus-within:ring-[#68B92E]">
-                    <input type="checkbox" name="subject[]" value="${subjectName}" ${isChecked} class="form-checkbox text-[#68B92E] focus:ring-[#68B92E]">
-                    <span class="font-medium text-[#68B92E]">${subjectName}</span>
+                <label class="flex items-center gap-3 px-4 py-2 rounded-xl border border-gray-200 bg-white cursor-pointer shadow-sm transition">
+                    <input type="checkbox" name="subject[]" value="${subjectName}" ${isChecked} class="form-checkbox">
+                    <span class="font-medium">${subjectName}</span>
                 </label>
             `;
         });
@@ -101,5 +108,28 @@ document.addEventListener('DOMContentLoaded', function () {
     if (previouslySelectedCategory) {
         renderSubjects(previouslySelectedCategory);
     }
+
+    const modal = document.getElementById('filter-modal');
+    const openBtn = document.getElementById('open-filter-btn');
+    const closeBtn = document.getElementById('close-filter-btn');
+
+    if (openBtn) {
+        openBtn.addEventListener('click', function() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+    }
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    });
 });
 </script>

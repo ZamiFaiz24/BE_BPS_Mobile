@@ -3,40 +3,80 @@
 namespace App\Services\DatasetHandlers;
 
 use App\Models\BpsDataset;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 
 class GenderBasedStatisticHandler implements DatasetHandlerInterface
 {
-    protected $dataset;
-    protected $year;
-    protected $unit;
+    protected BpsDataset $dataset;
+    protected ?int $year;
+    protected string $unit = '';
+    protected string $genderColumn; // [DITAMBAHKAN] Untuk menyimpan nama kolom yang benar
+    protected Collection $latestValues;
 
     public function __construct(BpsDataset $dataset, $year = null)
     {
         $this->dataset = $dataset;
         $this->year = $year ?: $dataset->values()->max('year');
-        $firstValue = $this->dataset->values()->where('year', $this->year)->first();
-        $this->unit = $firstValue ? $firstValue->unit : '';
+
+        if ($this->year) {
+            // [LOGIKA BARU] Deteksi kolom gender secara otomatis
+            $this->genderColumn = $this->detectGenderColumn();
+
+            $this->latestValues = $this->fetchValuesForYear($this->year);
+            $this->unit = $this->latestValues->first()->unit ?? 'Persen';
+        } else {
+            $this->latestValues = collect();
+            $this->genderColumn = 'vervar_label'; // Default jika tidak ada data
+        }
     }
+
     /**
-     * Helper untuk mengambil data dasar yang bersih
+     * [FUNGSI BARU]
+     * Secara cerdas mendeteksi apakah data gender ada di 'vervar_label' atau 'turvar_label'.
      */
-    private function getBaseValues()
+    private function detectGenderColumn(): string
+    {
+        // Ambil satu sampel data untuk dianalisis
+        $sample = $this->dataset->values()->where('year', $this->year)->first();
+
+        if (!$sample) {
+            return 'vervar_label'; // Default jika tidak ada sampel
+        }
+
+        // Cek di laci pertama ('vervar_label')
+        if (in_array($sample->vervar_label, ['Laki-laki', 'Perempuan'])) {
+            return 'vervar_label';
+        }
+
+        // Jika tidak ada, cek di laci kedua ('turvar_label')
+        if (in_array($sample->turvar_label, ['Laki-laki', 'Perempuan'])) {
+            return 'turvar_label';
+        }
+
+        // Jika tidak ada di keduanya, kembalikan default
+        return 'vervar_label';
+    }
+
+    /**
+     * Helper untuk mengambil data berdasarkan kolom gender yang sudah terdeteksi.
+     */
+    private function fetchValuesForYear(int $year): Collection
     {
         return $this->dataset->values()
-            ->where('year', $this->year)
-            ->whereIn('vervar_label', ['Laki-laki', 'Perempuan'])
+            ->where('year', $year)
+            // [DIUBAH] Menggunakan variabel dinamis $this->genderColumn
+            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
             ->get();
     }
 
     public function getTableData(): array
     {
-        $values = $this->getBaseValues();
         return [
             'headers' => ["Jenis Kelamin", $this->unit],
-            'rows' => $values->map(function ($item) {
+            'rows' => $this->latestValues->map(function ($item) {
                 return [
-                    'Jenis Kelamin' => $item->vervar_label,
+                    // [DIUBAH] Menggunakan kolom yang benar
+                    'Jenis Kelamin' => $item->{$this->genderColumn},
                     $this->unit => $item->value,
                 ];
             })->all(),
@@ -45,30 +85,58 @@ class GenderBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getChartData(): array
     {
-        $chartData = $this->getBaseValues();
-
         return [
             'type' => 'pie',
             'title' => 'Distribusi Menurut Jenis Kelamin (' . $this->unit . ')',
-            'labels' => $chartData->pluck('vervar_label')->toArray(),
-            'data' => $chartData->pluck('value')->toArray(),
+            // [DIUBAH] Menggunakan kolom yang benar
+            'labels' => $this->latestValues->pluck($this->genderColumn)->toArray(),
+            'data' => $this->latestValues->pluck('value')->toArray(),
         ];
     }
 
     public function getInsightData(): array
     {
-        $values = $this->getBaseValues();
+        if ($this->latestValues->isEmpty()) {
+            return [['title' => 'Info', 'value' => 'Data tidak tersedia', 'description' => 'Tidak ada data untuk ditampilkan.']];
+        }
 
-        $lakiLaki = $values->firstWhere('vervar_label', 'Laki-laki')->value ?? 0;
-        $perempuan = $values->firstWhere('vervar_label', 'Perempuan')->value ?? 0;
+        $lakiLaki = $this->latestValues->firstWhere($this->genderColumn, 'Laki-laki')->value ?? 0;
+        $perempuan = $this->latestValues->firstWhere($this->genderColumn, 'Perempuan')->value ?? 0;
+
+        // ... (Logika insight lainnya tetap sama, tidak perlu diubah)
         $insightValue = $lakiLaki > $perempuan ? 'Laki-laki' : 'Perempuan';
+        $selisih = round(abs($lakiLaki - $perempuan), 2);
+
+        $prevValues = $this->fetchValuesForYear($this->year - 1);
+        $prevLaki = $prevValues->firstWhere($this->genderColumn, 'Laki-laki')->value ?? null;
+        $prevPerempuan = $prevValues->firstWhere($this->genderColumn, 'Perempuan')->value ?? null;
+
+        $persenLaki = ($prevLaki && $lakiLaki) ? round((($lakiLaki - $prevLaki) / $prevLaki) * 100, 2) : null;
+        $persenPerempuan = ($prevPerempuan && $perempuan) ? round((($perempuan - $prevPerempuan) / $perempuan) * 100, 2) : null;
 
         return [
             [
                 'title' => 'Nilai Tertinggi',
                 'value' => $insightValue,
                 'description' => 'Nilai untuk ' . $insightValue . ' lebih tinggi pada tahun ' . $this->year,
-            ]
+            ],
+            [
+                'title' => 'Selisih Nilai',
+                'value' => $selisih . " " . $this->unit,
+                'description' => 'Selisih antara Laki-laki dan Perempuan pada tahun ' . $this->year,
+            ],
+            [
+                'title' => 'Perubahan Laki-laki',
+                'value' => $persenLaki !== null ? $persenLaki . '%' : '-',
+                'description' => 'Perubahan nilai Laki-laki dibanding tahun sebelumnya.',
+            ],
+            [
+                'title' => 'Perubahan Perempuan',
+                'value' => $persenPerempuan !== null ? $persenPerempuan . '%' : '-',
+                'description' => 'Perubahan nilai Perempuan dibanding tahun sebelumnya.',
+            ],
         ];
     }
+
+    // Anda bisa menambahkan method history dan lainnya di sini jika perlu
 }

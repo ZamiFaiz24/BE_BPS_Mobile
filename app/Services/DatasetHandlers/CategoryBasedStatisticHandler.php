@@ -1,98 +1,151 @@
 <?php
-// filepath: d:\Aplikasi\xampp\htdocs\Laravel\be_bps_mobile\app\Services\DatasetHandlers\CategoryBasedStatisticHandler.php
 
 namespace App\Services\DatasetHandlers;
 
 use App\Models\BpsDataset;
+use Illuminate\Support\Collection;
 
 class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 {
-    protected $dataset;
-    protected $year;
-    protected $unit;
+    protected BpsDataset $dataset;
+    protected ?int $year;
+    protected Collection $latestValues;
+    protected string $categoryColumn;
 
     public function __construct(BpsDataset $dataset, $year = null)
     {
         $this->dataset = $dataset;
         $this->year = $year ?: $dataset->values()->max('year');
-        $firstValue = $this->dataset->values()->where('year', $this->year)->first();
-        $this->unit = $firstValue ? $firstValue->unit : '';
+
+        if ($this->year) {
+            $this->latestValues = $this->dataset->values()->where('year', $this->year)->get();
+            $this->categoryColumn = $this->detectCategoryColumn();
+        } else {
+            $this->latestValues = collect();
+            $this->categoryColumn = 'turvar_label';
+        }
     }
 
-    /**
-     * Menyiapkan data untuk tabel
-     */
+    private function detectCategoryColumn(): string
+    {
+        if ($this->latestValues->isEmpty()) {
+            return 'turvar_label';
+        }
+
+        $vervarCount = $this->latestValues->pluck('vervar_label')->unique()->count();
+        $turvarCount = $this->latestValues->pluck('turvar_label')->unique()->count();
+
+        if ($turvarCount > $vervarCount) {
+            return 'turvar_label';
+        }
+
+        if ($vervarCount > $turvarCount && $this->latestValues->first()->vervar_label !== 'Kabupaten Kebumen') {
+            return 'vervar_label';
+        }
+
+        return 'turvar_label';
+    }
+
     public function getTableData(): array
     {
-        $values = $this->dataset->values()
-            ->where('year', $this->year)
-            ->get();
-
-        // Ambil semua unit unik
-        $units = $values->pluck('unit')->unique()->filter()->values()->toArray();
-
-        // Header: Kategori + semua unit
+        $units = $this->latestValues->pluck('unit')->unique()->filter()->values()->toArray();
+        if (empty($units)) {
+            $units = ['Nilai'];
+        }
         $headers = array_merge(['Kategori'], $units);
+        $grouped = $this->latestValues->groupBy($this->categoryColumn);
 
-        // Bangun rows
         $rows = [];
-        // Kelompokkan berdasarkan kategori (turvar_label)
-        $grouped = $values->groupBy('turvar_label');
         foreach ($grouped as $kategori => $items) {
             $row = ['Kategori' => $kategori];
             foreach ($units as $unit) {
-                // Cari value untuk unit ini
-                $item = $items->firstWhere('unit', $unit);
+                $item = ($unit === 'Nilai') ? $items->first() : $items->firstWhere('unit', $unit);
                 $row[$unit] = $item ? $item->value : null;
             }
             $rows[] = $row;
         }
-
-        return [
-            'headers' => $headers,
-            'rows' => $rows,
-        ];
+        return ['headers' => $headers, 'rows' => $rows];
     }
 
-    /**
-     * Menyiapkan data untuk grafik
-     */
     public function getChartData(): array
     {
-        $chartData = $this->dataset->values()
-            ->where('year', $this->year)
-            ->get();
+        if ($this->latestValues->isEmpty()) {
+            return ['type' => 'bar', 'title' => 'Data Tidak Tersedia', 'labels' => [], 'data' => []];
+        }
 
-        $unit = $chartData->first() ? $chartData->first()->unit : '';
+        $allUnits = $this->latestValues->pluck('unit')->unique();
+        $unitForChart = 'Nilai';
+        if ($allUnits->contains('Persen')) {
+            $unitForChart = 'Persen';
+        } elseif ($allUnits->count() > 0 && $allUnits->first() !== null) {
+            $unitForChart = $allUnits->first();
+        }
+
+        $chartData = ($unitForChart === 'Nilai')
+            ? $this->latestValues
+            : $this->latestValues->where('unit', $unitForChart);
 
         return [
             'type' => 'bar',
-            'title' => ["Distribusi Berdasarkan Kategori ", $this->unit],
-            'labels' => $chartData->pluck('turvar_label')->toArray(),
+            'title' => 'Distribusi Berdasarkan Kategori (' . $unitForChart . ')',
+            'labels' => $chartData->pluck($this->categoryColumn)->toArray(),
             'data' => $chartData->pluck('value')->toArray(),
         ];
     }
 
-    /**
-     * Menyiapkan data untuk insight
-     */
     public function getInsightData(): array
     {
-        $values = $this->dataset->values()
-            ->where('year', $this->year)
-            ->get();
+        if ($this->latestValues->isEmpty()) {
+            return [['title' => 'Info', 'value' => 'Data tidak tersedia', 'description' => 'Tidak ada data untuk ditampilkan.']];
+        }
 
-        $unit = $values->first() ? $values->first()->unit : '';
-        $max = $values->sortByDesc('value')->first();
+        $max = $this->latestValues->sortByDesc('value')->first();
+        $unit = $max->unit ?? '';
 
         return [
             [
                 'title' => 'Kategori Tertinggi',
-                'value' => $max ? $max->turvar_label : '-',
+                'value' => $max ? $max->{$this->categoryColumn} : '-',
                 'description' => $max
-                    ? 'Kategori dengan nilai tertinggi adalah ' . $max->turvar_label . ' (' . $max->value . ' ' . $unit . ') pada tahun ' . $this->year
+                    ? 'Nilai tertinggi adalah ' . $max->{$this->categoryColumn} . ' (' . $max->value . ' ' . $unit . ') pada tahun ' . $this->year
                     : 'Data tidak tersedia.',
             ]
+        ];
+    }
+
+    // ======================================================================
+    // [FUNGSI BARU] Menambahkan Kemampuan untuk Melihat Sejarah (History)
+    // ======================================================================
+    public function getHistoryData(): array
+    {
+        // 1. Ambil semua data historis dari database untuk dataset ini
+        $allValues = $this->dataset->values()->orderBy('year')->get();
+
+        if ($allValues->isEmpty()) {
+            return []; // Kembalikan kosong jika memang tidak ada data
+        }
+
+        // 2. Kelompokkan data berdasarkan tahun
+        $groupedByYear = $allValues->groupBy('year');
+
+        // 3. Hitung total nilai untuk setiap tahun
+        $yearlyTotals = $groupedByYear->map(function ($itemsInYear) {
+            // Kita akan menjumlahkan nilai dari unit yang paling umum (bukan persen)
+            $unit = $itemsInYear->first()->unit ?? 'Nilai';
+            return $itemsInYear->where('unit', $unit)->sum('value');
+        });
+
+        // 4. Siapkan data untuk grafik garis
+        return [
+            'type' => 'line',
+            'title' => 'Tren Total dari Tahun ke Tahun',
+            'labels' => $yearlyTotals->keys()->toArray(),
+            'datasets' => [
+                [
+                    'label' => 'Total Nilai',
+                    'data' => $yearlyTotals->values()->toArray(),
+                ],
+            ],
         ];
     }
 }
