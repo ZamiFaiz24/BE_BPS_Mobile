@@ -15,6 +15,8 @@
                         {{ session('status') }}
                     </div>
                 @endif
+                <div id="sync-notif"></div>
+
                 @if (session('error'))
                     <div class="mb-6 p-4 bg-red-100 text-red-800 border-l-4 border-red-500 rounded-r-lg">
                         {{ session('error') }}
@@ -80,10 +82,10 @@
                                 </a>
                             @endif
                             {{-- Tombol Sinkronisasi --}}
-                            <a href="{{ route('admin.sync.all') }}"
-                                class="inline-flex items-center px-4 py-2 text-white bg-[#68B92E] rounded-full font-semibold shadow-sm hover:bg-[#4E8C1A] transition">
-                                <x-heroicon-o-arrow-path class="w-5 h-5 mr-2" />
-                                Sinkronisasi Data
+                            <a href="#" id="sync-btn"
+                               class="inline-flex items-center px-4 py-2 text-white bg-[#68B92E] rounded-full font-semibold shadow-sm hover:bg-[#4E8C1A] transition">
+                               <x-heroicon-o-arrow-path class="w-5 h-5 mr-2" />
+                               Sinkronisasi Data
                             </a>
                         </div>
                         {{-- Form Pencarian Sederhana --}}
@@ -194,4 +196,51 @@
     </script>
 
     <script src="//unpkg.com/alpinejs" defer></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const syncBtn = document.getElementById('sync-btn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                syncBtn.innerHTML = '<span class="animate-spin mr-2">&#8635;</span> Sinkronisasi...';
+                syncBtn.disabled = true;
+
+                fetch('{{ route('admin.sync.all') }}', { method: 'POST', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'} })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Simpan pesan sukses ke localStorage
+                        localStorage.setItem('syncSuccess', data.message || 'Sinkronisasi berhasil!');
+                        window.location.reload();
+                    })
+                    .catch(() => {
+                        localStorage.setItem('syncError', 'Gagal sinkronisasi!');
+                        window.location.reload();
+                    });
+            });
+        }
+
+        // Tampilkan notifikasi jika ada pesan di localStorage
+        if (localStorage.getItem('syncSuccess')) {
+            const notif = document.getElementById('sync-notif');
+            notif.innerHTML =
+                '<div id="notif-banner" class="mb-6 p-4 bg-green-100 text-green-800 border-l-4 border-green-500 rounded-r-lg transition-opacity duration-500">'
+                + localStorage.getItem('syncSuccess') +
+                '</div>';
+            localStorage.removeItem('syncSuccess');
+            // Hilangkan notifikasi setelah 4 detik
+            setTimeout(() => {
+                const banner = document.getElementById('notif-banner');
+                if (banner) {
+                    banner.style.opacity = 0;
+                    setTimeout(() => banner.remove(), 500); // Hapus dari DOM setelah animasi
+                }
+            }, 4000);
+        }
+        if (localStorage.getItem('syncError')) {
+            alert(localStorage.getItem('syncError'));
+            localStorage.removeItem('syncError');
+        }
+    });
+    </script>
 </x-app-layout>

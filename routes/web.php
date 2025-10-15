@@ -27,7 +27,7 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
+    Route::post('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
 
     // Kelompokkan semua route dataset
     Route::prefix('datasets')->name('datasets.')->group(function () {

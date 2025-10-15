@@ -204,33 +204,33 @@ return [
         //     ],
         // ],
 
-        [
-            'model'        => 'data',
-            'name'         => 'Penduduk Berumur 15 Tahun Ke Atas yang Termasuk Angkatan Kerja Menurut Pendidikan Tertinggi yang Ditamatkan dan Kegiatan Selama Seminggu yang Lalu di Kabupaten Kebumen',
-            'variable_id'  => 221,
-            'unit'         => 'Jiwa',
-            'tahun_mulai'  => 2022,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'default',
-            'category'     => 1,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Penduduk Berumur 15 Tahun Ke Atas yang Termasuk Angkatan Kerja Menurut Pendidikan Tertinggi yang Ditamatkan dan Kegiatan Selama Seminggu yang Lalu di Kabupaten Kebumen',
+        //     'variable_id'  => 221,
+        //     'unit'         => 'Jiwa',
+        //     'tahun_mulai'  => 2022,
+        //     'tahun_akhir'  => 2023,
+        //     'insight_type' => 'default',
+        //     'category'     => 1,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
 
-        [
-            'model'        => 'data',
-            'name'         => 'Jumlah Kejadian Bencana Alam Menurut Kecamatan di Kabupaten Kebumen',
-            'variable_id'  => 442,
-            'unit'         => 'Kejadian',
-            'tahun_mulai'  => 2020,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'default',
-            'category'     => 3,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Jumlah Kejadian Bencana Alam Menurut Kecamatan di Kabupaten Kebumen',
+        //     'variable_id'  => 442,
+        //     'unit'         => 'Kejadian',
+        //     'tahun_mulai'  => 2020,
+        //     'tahun_akhir'  => 2023,
+        //     'insight_type' => 'default',
+        //     'category'     => 3,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
 
         [
             'model'        => 'data',
@@ -246,6 +246,19 @@ return [
             ],
         ],
 
+        [
+            'model'        => 'data',
+            'name'         => 'Angka Beban Ketergantungan di Kabupaten Kebumen',
+            'variable_id'  => 770,
+            'unit'         => 'Indeks',
+            'tahun_mulai'  => 2017,
+            'tahun_akhir'  => 2022,
+            'insight_type' => 'default',
+            'category'     => 1,
+            'params'       => [
+                'domain' => '3305',
+            ],
+        ],
 
     ]
 ];

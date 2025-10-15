@@ -143,7 +143,7 @@ class DashboardController extends Controller
         }
 
         // 3. Langsung berikan respon ke user, jangan menunggu proses selesai
-        return redirect()->route('admin.dashboard')->with('status', 'Semua dataset telah dimasukkan ke dalam antrian untuk disinkronkan.');
+        return response()->json(['status' => 'ok', 'message' => 'Sinkronisasi berhasil!']);
     }
 
     public function show(BpsDataset $dataset)
