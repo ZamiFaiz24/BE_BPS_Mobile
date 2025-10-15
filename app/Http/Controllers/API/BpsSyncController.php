@@ -16,6 +16,7 @@ class BpsSyncController extends Controller
             'tahun_mulai' => 'required|integer|digits:4',
             'tahun_akhir' => 'required|integer|digits:4|gte:tahun_mulai',
             'label' => 'required|string|max:255',
+            'category' => 'required|integer|exists:bps_categories,id',
         ]);
 
         SyncBpsDataJob::dispatch(
@@ -23,7 +24,8 @@ class BpsSyncController extends Controller
             $validated['variable'],
             $validated['tahun_mulai'],
             $validated['tahun_akhir'],
-            $validated['label']
+            $validated['label'],
+            $validated['category'] // <-- Change this line
         );
 
         return response()->json(['message' => 'Proses sinkronisasi untuk dataset ' . $validated['label'] . ' telah dimulai.']);

@@ -32,7 +32,6 @@ class DashboardController extends Controller
 
         $datasets = $query->orderBy('dataset_name')->paginate(10)->withQueryString();
 
-        // --- 2. DATA STATISTIK (Tidak berubah) ---
         $datasetCount = \App\Models\BpsDataset::count();
         $valueCount = \App\Models\BpsDataValue::count();
         $lastValue = \App\Models\BpsDataValue::latest('updated_at')->first();
@@ -138,7 +137,8 @@ class DashboardController extends Controller
                 $target['variable_id'],
                 $target['tahun_mulai'],
                 $target['tahun_akhir'],
-                $target['name']
+                $target['name'],
+                $target['category']
             );
         }
 

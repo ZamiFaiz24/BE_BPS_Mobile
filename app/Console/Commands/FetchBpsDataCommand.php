@@ -26,6 +26,7 @@ class FetchBpsDataCommand extends Command
 
         // 1. Baca "Buku Catatan Digital"
         $targets = config('bps_targets.datasets');
+        dd($targets);
 
         if (empty($targets)) {
             $this->warn('No datasets found in config/bps_targets.php. Exiting.');
@@ -36,14 +37,29 @@ class FetchBpsDataCommand extends Command
         foreach ($targets as $target) {
             $this->info("Processing: {$target['name']}");
 
+            // Validasi awal untuk memastikan 'variable_id' ada
+            if (!isset($target['variable_id'])) {
+                $this->error(" -> Skipping '{$target['name']}'. Missing 'variable_id'.");
+                Log::error("Skipping target due to missing 'variable_id'", ['target_name' => $target['name']]);
+                continue; // Lanjut ke target berikutnya
+            }
+
             $years = range($target['tahun_mulai'], $target['tahun_akhir']);
             $dataset = null;
 
             foreach ($years as $year) {
                 // 3. Siapkan parameter untuk "Kurir"
                 $apiParams = array_merge($target['params'], [
-                    'var' => $target['variable_id'],
-                    'th' => $bpsApiService->tahunKeKode($year), // Menggunakan helper dari service
+                    'domain' => $target['params']['domain'] ?? '3305', 
+                    'var'    => $target['variable_id'],
+                    'th'     => $bpsApiService->tahunKeKode($year),
+                ]);
+
+                Log::info("Preparing to fetch:", [
+                    'name'    => $target['name'],
+                    'var_id'  => $target['variable_id'],
+                    'year'    => $year,
+                    'params'  => $apiParams
                 ]);
 
                 // 4. Minta "Kurir" untuk mengambil data mentah dari BPS
