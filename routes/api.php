@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\BpsDatasetController;
 use App\Http\Controllers\API\BpsSyncController;
 use App\Http\Controllers\API\BpsDataController;
-use App\Http\Controllers\API\ContentController;
+use App\Http\Controllers\API\BpsContentController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -20,11 +20,12 @@ Route::get('/data/{dataset_code}', [BpsDataController::class, 'show']);
 // Route untuk mengambil data untuk chart
 Route::get('/chart/gender/{dataset_code}/{year}', [BpsDataController::class, 'getGenderChartData']);
 
-Route::get('/v1/publications', [ContentController::class, 'publications']);
-Route::get('/v1/news', [ContentController::class, 'news']);
-Route::get('/v1/infographics', [ContentController::class, 'infographics']);
-
-Route::get('/bps/publications/panther', [ContentController::class, 'getPublicationsWithPanther']);
+Route::prefix('content')->group(function () {
+    Route::post('/news', [BpsContentController::class, 'storeNews']);
+    Route::post('/press-releases', [BpsContentController::class, 'storePressRelease']);
+    Route::post('/infographics', [BpsContentController::class, 'storeInfographic']);
+    Route::post('/publications', [BpsContentController::class, 'storePublication']);
+});
 
 Route::prefix('datasets')->group(function () {
     Route::get('{dataset}', [\App\Http\Controllers\API\BpsDatasetController::class, 'show']);
