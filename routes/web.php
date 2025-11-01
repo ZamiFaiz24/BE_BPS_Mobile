@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DashboardContentController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Admin\SyncController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -23,11 +24,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::post('/sync-all-datasets', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
+    Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
+    Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
 
     // Kelompokkan semua route dataset
     Route::prefix('datasets')->name('datasets.')->group(function () {
@@ -47,6 +49,10 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
         Route::post('/', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
         Route::get('/backup', [\App\Http\Controllers\Admin\SettingController::class, 'backup'])->name('settings.backup');
     });
+
+    Route::get('/contents', [DashboardContentController::class, 'index'])->name('contents.index');
+    Route::delete('/contents/{id}', [DashboardContentController::class, 'destroy'])->name('contents.destroy');
+    Route::get('/contents/{id}/show', [DashboardContentController::class, 'show'])->name('contents.show');
 });
 
 require __DIR__ . '/auth.php';
