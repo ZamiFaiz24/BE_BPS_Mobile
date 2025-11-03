@@ -49,10 +49,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
         Route::get('/backup', [\App\Http\Controllers\Admin\SettingController::class, 'backup'])->name('settings.backup');
     });
-
-    Route::get('/contents', [DashboardContentController::class, 'index'])->name('contents.index');
-    Route::delete('/contents/{id}', [DashboardContentController::class, 'destroy'])->name('contents.destroy');
-    Route::get('/contents/{id}/show', [DashboardContentController::class, 'show'])->name('contents.show');
+;
 });
 
 require __DIR__ . '/auth.php';

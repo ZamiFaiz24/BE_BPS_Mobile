@@ -165,7 +165,7 @@
                                             @if($content->link)
                                                 <a href="{{ $content->link }}" target="_blank" class="text-[#0093DD] hover:text-[#68B92E] font-semibold mr-3">Lihat</a>
                                             @endif
-                                            <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
+                                            <form action="{{ route('admin.contents.destroy', $content) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <input type="hidden" name="type" value="{{ $content->type }}">
