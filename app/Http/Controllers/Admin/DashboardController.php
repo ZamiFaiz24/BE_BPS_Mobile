@@ -5,24 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BpsDataset;
-use App\Models\BpsDataValue;
+use App\Models\BpsDatavalue;
 use App\Jobs\SyncBpsDataJob;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // --- 1. LOGIKA QUERY UTAMA ---
         $query = \App\Models\BpsDataset::query();
 
-        // Filter berdasarkan SATU kategori (dari radio button)
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
 
-        // Filter berdasarkan BANYAK subject (dari checkbox)
         if ($request->filled('subject')) {
-            // whereIn siap menerima array dari checkbox 'subject[]'
             $query->whereIn('subject', (array) $request->subject);
         }
 
@@ -33,11 +29,10 @@ class DashboardController extends Controller
         $datasets = $query->orderBy('dataset_name')->paginate(10)->withQueryString();
 
         $datasetCount = \App\Models\BpsDataset::count();
-        $valueCount = \App\Models\BpsDataValue::count();
-        $lastValue = \App\Models\BpsDataValue::latest('updated_at')->first();
+        $valueCount = \App\Models\BpsDatavalue::count();
+        $lastValue = \App\Models\BpsDatavalue::latest('updated_at')->first();
         $lastSync = $lastValue ? $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum pernah';
 
-        // --- 3. DATA UNTUK JAVASCRIPT DI MODAL (Struktur Paling Penting) ---
         $categories = \App\Models\BpsDataset::select('category', 'subject')
             ->whereNotNull('category')->get()
             ->groupBy('category')
@@ -50,7 +45,6 @@ class DashboardController extends Controller
             })
             ->sortBy('id')->values();
 
-        // --- 4. KIRIM SEMUA DATA KE VIEW ---
         return view('admin.dashboard', [
             'datasetCount' => $datasetCount,
             'valueCount' => $valueCount,
@@ -60,20 +54,12 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Method 2: Menangani request filter via JavaScript (AJAX).
-     * Tugasnya hanya mengembalikan potongan HTML dari tabel & paginasi.
-     */
     public function ajaxFilter(Request $request)
     {
         $datasets = $this->getFilteredDatasets($request);
         return view('admin.datasets.partials.table-and-pagination', compact('datasets'));
     }
 
-    /**
-     * Method 3: Helper private untuk query dataset.
-     * Menghindari duplikasi kode antara index() dan ajaxFilter().
-     */
     private function getFilteredDatasets(Request $request)
     {
         $query = BpsDataset::query();
@@ -93,7 +79,6 @@ class DashboardController extends Controller
 
     public function updateInsightType(Request $request, BpsDataset $dataset)
     {
-        // Validasi input
         $request->validate([
             'insight_type' => 'required|string|in:default,percent_lower_is_better,percent_higher_is_better,number_lower_is_better,number_higher_is_better',
         ]);
@@ -107,13 +92,10 @@ class DashboardController extends Controller
     public function updateAllInsightTypes(Request $request)
     {
         $validated = $request->validate([
-            // Memvalidasi bahwa input adalah array
             'insight_types' => 'required|array',
-            // Memvalidasi setiap value di dalam array
             'insight_types.*' => 'required|string|in:default,percent_lower_is_better,percent_higher_is_better,number_lower_is_better,number_higher_is_better',
         ]);
 
-        // Looping untuk menyimpan setiap perubahan
         foreach ($validated['insight_types'] as $datasetId => $insightType) {
             BpsDataset::where('id', $datasetId)->update(['insight_type' => $insightType]);
         }
