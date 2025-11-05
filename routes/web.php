@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Admin\SyncController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // Ini adalah route dashboard untuk user biasa
