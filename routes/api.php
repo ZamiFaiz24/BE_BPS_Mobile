@@ -25,6 +25,11 @@ Route::prefix('content')->group(function () {
     Route::post('/press-releases', [BpsContentController::class, 'storePressRelease']);
     Route::post('/infographics', [BpsContentController::class, 'storeInfographic']);
     Route::post('/publications', [BpsContentController::class, 'storePublication']);
+
+    Route::get('/news', [BpsContentController::class, 'getNews']);
+    Route::get('/press-releases', [BpsContentController::class, 'getPressReleases']);
+    Route::get('/infographics', [BpsContentController::class, 'getInfographics']);
+    Route::get('/publications', [BpsContentController::class, 'getPublications']);
 });
 
 Route::prefix('datasets')->group(function () {

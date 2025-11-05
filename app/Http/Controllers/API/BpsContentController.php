@@ -444,4 +444,192 @@ class BpsContentController extends Controller
             'saved_count' => $storedCount
         ], 201);
     }
+
+    /**
+     * Get News with pagination, filtering, and sorting
+     */
+    public function getNews(Request $request)
+    {
+        $query = News::query();
+
+        // Filter by category
+        if ($request->has('category') && $request->category) {
+            $query->where('category', 'like', '%' . $request->category . '%');
+        }
+
+        // Search by title
+        if ($request->has('search') && $request->search) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by date range
+        if ($request->has('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $news = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'News retrieved successfully',
+            'data' => $news->items(),
+            'pagination' => [
+                'current_page' => $news->currentPage(),
+                'last_page' => $news->lastPage(),
+                'per_page' => $news->perPage(),
+                'total' => $news->total(),
+            ]
+        ], 200);
+    }
+
+    /**
+     * Get Press Releases with pagination, filtering, and sorting
+     */
+    public function getPressReleases(Request $request)
+    {
+        $query = PressRelease::query();
+
+        // Filter by category
+        if ($request->has('category') && $request->category) {
+            $query->where('category', 'like', '%' . $request->category . '%');
+        }
+
+        // Search by title
+        if ($request->has('search') && $request->search) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by date range
+        if ($request->has('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $pressReleases = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Press releases retrieved successfully',
+            'data' => $pressReleases->items(),
+            'pagination' => [
+                'current_page' => $pressReleases->currentPage(),
+                'last_page' => $pressReleases->lastPage(),
+                'per_page' => $pressReleases->perPage(),
+                'total' => $pressReleases->total(),
+            ]
+        ], 200);
+    }
+
+    /**
+     * Get Infographics with pagination, filtering, and sorting
+     */
+    public function getInfographics(Request $request)
+    {
+        $query = Infographic::query();
+
+        // Filter by category (subject)
+        if ($request->has('category') && $request->category) {
+            $query->where('category', 'like', '%' . $request->category . '%');
+        }
+
+        // Search by title
+        if ($request->has('search') && $request->search) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by date range
+        if ($request->has('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $infographics = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Infographics retrieved successfully',
+            'data' => $infographics->items(),
+            'pagination' => [
+                'current_page' => $infographics->currentPage(),
+                'last_page' => $infographics->lastPage(),
+                'per_page' => $infographics->perPage(),
+                'total' => $infographics->total(),
+            ]
+        ], 200);
+    }
+
+    /**
+     * Get Publications with pagination, filtering, and sorting
+     */
+    public function getPublications(Request $request)
+    {
+        $query = Publication::query();
+
+        // Filter by category (subject)
+        if ($request->has('category') && $request->category) {
+            $query->where('category', 'like', '%' . $request->category . '%');
+        }
+
+        // Search by title
+        if ($request->has('search') && $request->search) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by date range (release_date)
+        if ($request->has('date_from')) {
+            $query->where('release_date', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->where('release_date', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'release_date');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $publications = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Publications retrieved successfully',
+            'data' => $publications->items(),
+            'pagination' => [
+                'current_page' => $publications->currentPage(),
+                'last_page' => $publications->lastPage(),
+                'per_page' => $publications->perPage(),
+                'total' => $publications->total(),
+            ]
+        ], 200);
+    }
 }
