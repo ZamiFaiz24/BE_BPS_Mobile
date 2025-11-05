@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
-            {{ __('Manajemen Konten') }}
-        </h2>
+        <div class="flex items-center gap-3">
+            <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
+            <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
+                {{ __('Manajemen Konten') }}
+            </h2>
+        </div>
     </x-slot>
 
     <div class="py-12">

@@ -14,7 +14,7 @@ class BpsDataset extends Model
     // --- Relasi (sebaiknya ada juga) ---
     public function values(): HasMany
     {
-        return $this->hasMany(BpsDataValue::class, 'dataset_id');
+        return $this->hasMany(BpsDatavalue::class, 'dataset_id');
     }
 
     public function dimensions(): HasMany
