@@ -33,18 +33,18 @@
 
                     {{-- Form Filter --}}
                     <form method="GET" action="{{ route('admin.contents.index') }}" class="mb-6" id="filterForm">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             
                             {{-- Filter Tipe --}}
                             <div>
                                 <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Tipe Konten</label>
                                 <select name="type" id="type" 
                                     class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
-                                    <option value="">🔍 Semua Tipe</option>
-                                    <option value="news" {{ request('type') == 'news' ? 'selected' : '' }}>📰 Berita</option>
-                                    <option value="press_release" {{ request('type') == 'press_release' ? 'selected' : '' }}>📢 Siaran Pers</option>
-                                    <option value="publication" {{ request('type') == 'publication' ? 'selected' : '' }}>📚 Publikasi</option>
-                                    <option value="infographic" {{ request('type') == 'infographic' ? 'selected' : '' }}>📊 Infografik</option>
+                                    <option value="">Semua Tipe</option>
+                                    <option value="news" {{ request('type') == 'news' ? 'selected' : '' }}>Berita</option>
+                                    <option value="press_release" {{ request('type') == 'press_release' ? 'selected' : '' }}>Siaran Pers</option>
+                                    <option value="publication" {{ request('type') == 'publication' ? 'selected' : '' }}>Publikasi</option>
+                                    <option value="infographic" {{ request('type') == 'infographic' ? 'selected' : '' }}>Infografik</option>
                                 </select>
                             </div>
 
@@ -64,18 +64,37 @@
                                     class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition" />
                             </div>
 
+                            {{-- Urutkan --}}
+                            <div>
+                                <label for="sort" class="block text-sm font-medium text-gray-700 mb-2">Urutkan</label>
+                                <select name="sort" id="sort"
+                                    class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
+                                    <option value="publish_date_desc" {{ request('sort', 'publish_date_desc') == 'publish_date_desc' ? 'selected' : '' }}>
+                                        Tanggal Rilis Terbaru
+                                    </option>
+                                    <option value="publish_date_asc" {{ request('sort') == 'publish_date_asc' ? 'selected' : '' }}>
+                                        Tanggal Rilis Terlama
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         {{-- Tombol Aksi --}}
                         <div class="flex gap-3 mt-4">
                             <button type="submit" 
-                                class="bg-[#0093DD] hover:bg-[#0070C0] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
-                                🔍 Cari
+                                class="inline-flex items-center gap-2 bg-[#0093DD] hover:bg-[#0070C0] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 5.5 5.5a7.5 7.5 0 0 0 11.15 11.15Z"/>
+                                </svg>
+                                Cari
                             </button>
                             @if(request('type') || request('q') || request('category'))
                                 <a href="{{ route('admin.contents.index') }}" 
-                                    class="bg-[#EB891C] hover:bg-[#D67A15] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
-                                    🔄 Reset Filter
+                                   class="inline-flex items-center gap-2 bg-[#EB891C] hover:bg-[#D67A15] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12a7.5 7.5 0 0 1 12.62-5.3M19.5 12a7.5 7.5 0 0 1-12.62 5.3M12 7.5v4.875c0 .207.124.395.316.474l3.369 1.404"/>
+                                    </svg>
+                                    Reset Filter
                                 </a>
                             @endif
                         </div>
@@ -119,7 +138,19 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-[#0093DD]/10">
-                                @forelse ($contents as $content)
+                                @php
+                                    // Fallback sorting on current page (controller orderBy is recommended for global ordering)
+                                    $items = $contents->getCollection();
+                                    $items = $items->sortByDesc(function($c) {
+                                        try { return $c->publish_date ? \Carbon\Carbon::parse($c->publish_date)->timestamp : 0; }
+                                        catch (\Exception $e) { return 0; }
+                                    });
+                                    if (request('sort') === 'publish_date_asc') {
+                                        $items = $items->reverse();
+                                    }
+                                @endphp
+
+                                @forelse ($items as $content)
                                     <tr>
                                         <td class="px-6 py-4">
                                             <div class="text-sm font-medium text-gray-900">{{ Str::limit($content->title, 60) }}</div>
@@ -164,16 +195,37 @@
                                                 <span class="text-gray-400 text-xs">N/A</span>
                                             @endif
                                         </td>
+
+                                        {{-- AKSI: ikon saja --}}
                                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                            @if($content->link)
-                                                <a href="{{ $content->link }}" target="_blank" class="text-[#0093DD] hover:text-[#68B92E] font-semibold mr-3">Lihat</a>
-                                            @endif
-                                            <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <input type="hidden" name="type" value="{{ $content->type }}">
-                                                <button type="submit" class="text-[#EB891C] hover:text-red-700 font-semibold">Hapus</button>
-                                            </form>
+                                            <div class="flex items-center justify-center gap-2">
+                                                @if($content->link)
+                                                    <a href="{{ $content->link }}" target="_blank"
+                                                       class="text-[#0093DD] hover:text-[#68B92E] inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-50 transition"
+                                                       title="Lihat" aria-label="Lihat">
+                                                        <!-- Ganti ke ikon 'open in new' -->
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                        </svg>
+                                                    </a>
+                                                @endif
+                                                <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <input type="hidden" name="type" value="{{ $content->type }}">
+                                                    <button type="submit"
+                                                            class="text-[#EB891C] hover:text-red-700 inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-50 transition"
+                                                            title="Hapus" aria-label="Hapus">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                  d="M6 7h12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m1 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7m3 4v6m4-6v6"/>
+                                                        </svg>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -189,7 +241,7 @@
 
                     {{-- Pagination --}}
                     <div class="mt-4">
-                        {{ $contents->links() }}
+                        {{ $contents->appends(request()->query())->links() }}
                     </div>
 
                 </div>

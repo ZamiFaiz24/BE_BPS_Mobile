@@ -3,7 +3,7 @@
         <x-slot name="header">
             <div class="flex items-center gap-3">
                 <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
                     {{ __('Manajemen Dataset BPS') }}
                 </h2>
             </div>    
