@@ -40,119 +40,53 @@ class BpsDatasetController extends Controller
         // ...tambahkan mapping lain sesuai kebutuhan
     ];
 
-    /**
-     * Lightweight list of datasets for mobile (GET /api/datasets)
-     * Query params:
-     * - subject (string) : filter by subject/category (partial match)
-     * - q (string)       : search in title or code
-     * - sort (string)    : publish_date_desc (default) | publish_date_asc
-     * - limit (int)      : max items (default 100)
-     */
     public function index(Request $request)
     {
-        $subject = $request->query('subject');
-        $q = $request->query('q');
-        $sort = $request->query('sort', 'publish_date_desc');
-        $limit = (int) $request->query('limit', 100);
-        $limit = $limit > 0 && $limit <= 500 ? $limit : 100; // safety cap
+        try {
+            // 1. Tentukan Model Anda. Pastikan nama ini benar.
+            // Ganti \App\Models\BpsDataset jika nama Model Anda berbeda.
+            $modelClass = \App\Models\BpsDataset::class;
 
-        // Try Eloquent model if available (BpsDataset or Dataset), otherwise fallback to DB table 'datasets'
-        $modelQuery = null;
-        if (class_exists(\App\Models\BpsDataset::class)) {
-            $modelQuery = \App\Models\BpsDataset::query();
-        } elseif (class_exists(\App\Models\BpsDataset::class)) {
-            $modelQuery = \App\Models\BpsDataset::query();
-        }
+            if (!class_exists($modelClass)) {
+                return response()->json(['error' => 'Model not found: ' . $modelClass], 500);
+            }
 
-        if ($modelQuery) {
-            // Select only light columns
-            $modelQuery->select([
-                'id',
-                'code',
-                'title',
-                'subject',       // try commonly used column names
-                'category as subject', // in case DB uses 'category' (will be ignored if not present)
-                'description',
-                'publish_date',
-                'release_date',
-                'url',
-            ]);
-            // Apply filters (use whereRaw/coalesce approach safe for missing columns)
+            // 2. Ambil filter (hanya 'subject' dan 'q' yang kita perlukan)
+            $subject = $request->query('subject');
+            $q = $request->query('q'); // 'q' untuk search
+
+            // 3. Mulai query
+            $query = $modelClass::query();
+
+            // 4. Gunakan nama kolom yang BENAR (dari API 'show' Anda)
+            // Kita HANYA perlu 'id', 'dataset_name', dan 'subject'
+            $query->select(['id', 'dataset_name', 'subject']);
+
+            // 5. Terapkan filter 'subject' (jika ada)
             if ($subject) {
-                $modelQuery->where(function ($qWhere) use ($subject) {
-                    $qWhere->whereRaw("COALESCE(subject, '') LIKE ?", ["%{$subject}%"])
-                        ->orWhereRaw("COALESCE(category, '') LIKE ?", ["%{$subject}%"]);
-                });
+                // 'subject' adalah nama kolom yang benar
+                $query->where('subject', $subject);
             }
+
+            // 6. Terapkan filter 'q' (search)
             if ($q) {
-                $modelQuery->where(function ($s) use ($q) {
-                    $s->where('title', 'like', "%{$q}%")
-                        ->orWhere('code', 'like', "%{$q}%");
-                });
-            }
-            // Sorting fallback fields
-            if ($sort === 'publish_date_asc') {
-                $modelQuery->orderByRaw("COALESCE(publish_date, release_date, '1970-01-01') ASC");
-            } else {
-                $modelQuery->orderByRaw("COALESCE(publish_date, release_date, '1970-01-01') DESC");
+                // 'dataset_name' adalah nama kolom yang benar, BUKAN 'title'
+                $query->where('dataset_name', 'like', "%{$q}%");
             }
 
-            $rows = $modelQuery->limit($limit)->get()->map(function ($r) {
-                return [
-                    'id' => $r->id ?? null,
-                    'code' => $r->code ?? null,
-                    'title' => $r->title ?? null,
-                    'subject' => $r->subject ?? ($r->category ?? null),
-                    'description' => $r->description ?? null,
-                    'last_updated' => $r->publish_date ?? ($r->release_date ?? null),
-                    'url' => $r->url ?? null,
-                ];
-            })->values();
-        } else {
-            // Fallback DB table - assume table 'datasets' exists with common columns
-            $query = DB::table('datasets')->select([
-                'id',
-                DB::raw("COALESCE(code, '') as code"),
-                DB::raw("COALESCE(title, '') as title"),
-                DB::raw("COALESCE(subject, COALESCE(category, '')) as subject"),
-                DB::raw("COALESCE(description, '') as description"),
-                DB::raw("COALESCE(publish_date, release_date) as last_updated"),
-                DB::raw("COALESCE(url, '') as url"),
-            ]);
+            // 7. Ambil data
+            $datasets = $query->limit(100)->get(); // Batasi 100
 
-            if ($subject) {
-                $query->where(function ($qb) use ($subject) {
-                    $qb->where('subject', 'like', "%{$subject}%")
-                        ->orWhere('category', 'like', "%{$subject}%");
-                });
-            }
-            if ($q) {
-                $query->where(function ($qb) use ($q) {
-                    $qb->where('title', 'like', "%{$q}%")
-                        ->orWhere('code', 'like', "%{$q}%");
-                });
-            }
-
-            if ($sort === 'publish_date_asc') {
-                $query->orderByRaw("COALESCE(publish_date, release_date, '1970-01-01') ASC");
-            } else {
-                $query->orderByRaw("COALESCE(publish_date, release_date, '1970-01-01') DESC");
-            }
-
-            $rows = $query->limit($limit)->get()->map(function ($r) {
-                return [
-                    'id' => $r->id,
-                    'code' => $r->code ?: null,
-                    'title' => $r->title ?: null,
-                    'subject' => $r->subject ?: null,
-                    'description' => $r->description ?: null,
-                    'last_updated' => $r->last_updated ?: null,
-                    'url' => $r->url ?: null,
-                ];
-            })->values();
+            // 8. Kembalikan data
+            return response()->json($datasets);
+        } catch (\Exception $e) {
+            // Jika ada error (misal kolom 'subject' tidak ada), ini akan menangkapnya
+            return response()->json([
+                'error_message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        return response()->json($rows, 200);
     }
 
     public function show(BpsDataset $dataset)
