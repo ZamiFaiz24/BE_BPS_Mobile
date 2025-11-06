@@ -7,6 +7,8 @@ use App\Models\BpsDataset; // Menggunakan model Anda
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use \Exception;
 
 // Impor semua kelas Handler yang akan Anda gunakan
 use App\Services\DatasetHandlers\PopulationByAgeGroupAndGenderHandler;
@@ -43,49 +45,59 @@ class BpsDatasetController extends Controller
     public function index(Request $request)
     {
         try {
-            // 1. Tentukan Model Anda. Pastikan nama ini benar.
-            // Ganti \App\Models\BpsDataset jika nama Model Anda berbeda.
+            // 1. Tentukan nama Model Anda.
+            // (Ganti jika nama Model Anda bukan \App\Models\BpsDataset)
             $modelClass = \App\Models\BpsDataset::class;
 
             if (!class_exists($modelClass)) {
-                return response()->json(['error' => 'Model not found: ' . $modelClass], 500);
+                // Jika model tidak ada, kirim error
+                throw new Exception('Server setup error: Model not found.');
             }
 
-            // 2. Ambil filter (hanya 'subject' dan 'q' yang kita perlukan)
+            // 2. Ambil filter dari URL query
             $subject = $request->query('subject');
             $q = $request->query('q'); // 'q' untuk search
 
-            // 3. Mulai query
+            // 3. Mulai Query Builder
             $query = $modelClass::query();
 
-            // 4. Gunakan nama kolom yang BENAR (dari API 'show' Anda)
-            // Kita HANYA perlu 'id', 'dataset_name', dan 'subject'
-            $query->select(['id', 'dataset_name', 'subject']);
+            // 4. PILIH HANYA KOLOM YANG KITA TAHU ADA DAN KITA PERLUKAN
+            // Ini berdasarkan API 'show' Anda yang berhasil.
+            $query->select([
+                'id',             // Untuk navigasi
+                'dataset_name', // Untuk judul di list
+                'subject'         // Untuk filter
+            ]);
 
             // 5. Terapkan filter 'subject' (jika ada)
             if ($subject) {
-                // 'subject' adalah nama kolom yang benar
+                // (Asumsi nama kolom di DB adalah 'subject')
                 $query->where('subject', $subject);
             }
 
-            // 6. Terapkan filter 'q' (search)
+            // 6. Terapkan filter 'q' (search) (jika ada)
             if ($q) {
-                // 'dataset_name' adalah nama kolom yang benar, BUKAN 'title'
+                // (Asumsi nama kolom di DB adalah 'dataset_name')
                 $query->where('dataset_name', 'like', "%{$q}%");
             }
 
-            // 7. Ambil data
-            $datasets = $query->limit(100)->get(); // Batasi 100
+            // 7. Ambil data (batasi 100)
+            $datasets = $query->limit(100)->get();
 
-            // 8. Kembalikan data
+            // 8. Kembalikan data sebagai JSON
             return response()->json($datasets);
         } catch (\Exception $e) {
-            // Jika ada error (misal kolom 'subject' tidak ada), ini akan menangkapnya
+            // 9. JIKA TERJADI ERROR DI ATAS (misal, kolom tidak ada)
+            // Catat error di log server
+            Log::error('Error in BpsDatasetController@index: ' . $e->getMessage());
+
+            // Kembalikan pesan error sebagai JSON (agar bisa dibaca di Android/Postman)
             return response()->json([
-                'error_message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ], 500);
+                'error_A' => 'Terjadi kesalahan pada server.',
+                'error_B_message' => $e->getMessage(),
+                'error_C_file' => $e->getFile(),
+                'error_D_line' => $e->getLine()
+            ], 500); // Kembalikan status 500
         }
     }
 
