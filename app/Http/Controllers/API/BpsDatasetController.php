@@ -54,37 +54,34 @@ class BpsDatasetController extends Controller
                 throw new Exception('Server setup error: Model not found.');
             }
 
-            // 2. Ambil filter dari URL query
-            $subject = $request->query('subject');
+            // 2. Ambil filter dari URL query (ganti subject -> category)
+            $category = $request->query('category');
             $q = $request->query('q'); // 'q' untuk search
 
             // 3. Mulai Query Builder
             $query = $modelClass::query();
 
-            // 4. PILIH HANYA KOLOM YANG KITA TAHU ADA DAN KITA PERLUKAN
-            // Ini berdasarkan API 'show' Anda yang berhasil.
+            // 4. Pilih kolom ringan (ganti subject -> category)
             $query->select([
-                'id',             // Untuk navigasi
-                'dataset_name', // Untuk judul di list
-                'subject'         // Untuk filter
+                'id',
+                'dataset_name',
+                'category',
             ]);
 
-            // 5. Terapkan filter 'subject' (jika ada)
-            if ($subject) {
-                // (Asumsi nama kolom di DB adalah 'subject')
-                $query->where('subject', $subject);
+            // 5. Terapkan filter 'category' (jika ada)
+            if ($category) {
+                $query->where('category', $category);
             }
 
-            // 6. Terapkan filter 'q' (search) (jika ada)
+            // 6. Pencarian judul/kode
             if ($q) {
-                // (Asumsi nama kolom di DB adalah 'dataset_name')
                 $query->where('dataset_name', 'like', "%{$q}%");
             }
 
-            // 7. Ambil data (batasi 100)
+            // 7. Ambil data (maks 100)
             $datasets = $query->limit(100)->get();
 
-            // 8. Kembalikan data sebagai JSON
+            // 8. Response ringan
             return response()->json($datasets);
         } catch (\Exception $e) {
             // 9. JIKA TERJADI ERROR DI ATAS (misal, kolom tidak ada)
