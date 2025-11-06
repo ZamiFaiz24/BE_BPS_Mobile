@@ -33,6 +33,9 @@ Route::prefix('content')->group(function () {
 });
 
 Route::prefix('datasets')->group(function () {
+    // Tambahkan route index untuk daftar dataset (ringan)
+    Route::get('/', [\App\Http\Controllers\API\BpsDatasetController::class, 'index']);
+
     Route::get('{dataset}', [\App\Http\Controllers\API\BpsDatasetController::class, 'show']);
     Route::get('{dataset}/history', [\App\Http\Controllers\API\BpsDatasetController::class, 'history']);
     Route::get('{dataset}/insights', [\App\Http\Controllers\API\BpsDatasetController::class, 'insights']);
