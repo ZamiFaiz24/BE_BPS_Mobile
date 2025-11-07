@@ -33,10 +33,13 @@ Route::prefix('content')->group(function () {
 });
 
 Route::prefix('datasets')->group(function () {
-    // Tambahkan route index untuk daftar dataset (ringan)
-    Route::get('/', [\App\Http\Controllers\API\BpsDatasetController::class, 'index']);
+    Route::get('categories', [BpsDatasetController::class, 'getCategories']);
 
-    Route::get('{dataset}', [\App\Http\Controllers\API\BpsDatasetController::class, 'show']);
-    Route::get('{dataset}/history', [\App\Http\Controllers\API\BpsDatasetController::class, 'history']);
-    Route::get('{dataset}/insights', [\App\Http\Controllers\API\BpsDatasetController::class, 'insights']);
+    // Route untuk daftar dataset (ringan)
+    Route::get('/', [BpsDatasetController::class, 'index']);
+
+    // Route dengan parameter dinamis harus di bawah
+    Route::get('{dataset}', [BpsDatasetController::class, 'show']);
+    Route::get('{dataset}/history', [BpsDatasetController::class, 'history']);
+    Route::get('{dataset}/insights', [BpsDatasetController::class, 'insights']);
 });

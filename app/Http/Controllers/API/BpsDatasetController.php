@@ -174,4 +174,64 @@ class BpsDatasetController extends Controller
             'insights' => $insightData,
         ]);
     }
+
+    public function getCategories(Request $request)
+    {
+        try {
+            $modelClass = \App\Models\BpsDataset::class;
+
+            if (!class_exists($modelClass)) {
+                throw new Exception('Server setup error: Model not found.');
+            }
+
+            // Ambil semua category dan subject yang unik dari database
+            $categoriesWithSubjects = $modelClass::select('category', 'subject')
+                ->whereNotNull('category')
+                ->whereNotNull('subject')
+                ->distinct()
+                ->get();
+
+            // Group subjects by category
+            $groupedData = [];
+            
+            foreach ($categoriesWithSubjects as $item) {
+                $category = $item->category;
+                $subject = $item->subject;
+
+                // Jika category belum ada di array, tambahkan
+                if (!isset($groupedData[$category])) {
+                    $groupedData[$category] = [
+                        'category' => $category,
+                        'subjects' => []
+                    ];
+                }
+
+                // Tambahkan subject ke array (hindari duplikat)
+                if (!in_array($subject, $groupedData[$category]['subjects'])) {
+                    $groupedData[$category]['subjects'][] = $subject;
+                }
+            }
+
+            // Sort subjects dalam setiap category
+            foreach ($groupedData as &$categoryData) {
+                sort($categoryData['subjects']);
+            }
+
+            // Convert associative array ke indexed array dan sort by category name
+            $result = array_values($groupedData);
+            usort($result, function($a, $b) {
+                return strcmp($a['category'], $b['category']);
+            });
+
+            return response()->json($result, 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in BpsDatasetController@getCategories: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Terjadi kesalahan pada server.',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
