@@ -42,38 +42,41 @@ class BpsDatasetController extends Controller
         // ...tambahkan mapping lain sesuai kebutuhan
     ];
 
+    /**
+     * Get list of datasets (for Layer 3: Dataset List based on selected subject)
+     * Filter by subject (NOT category)
+     * GET /api/datasets?subject=Penduduk
+     */
     public function index(Request $request)
     {
         try {
-            // 1. Tentukan nama Model Anda.
-            // (Ganti jika nama Model Anda bukan \App\Models\BpsDataset)
             $modelClass = \App\Models\BpsDataset::class;
 
             if (!class_exists($modelClass)) {
-                // Jika model tidak ada, kirim error
                 throw new Exception('Server setup error: Model not found.');
             }
 
-            // 2. Ambil filter dari URL query (ganti subject -> category)
-            $category = $request->query('category');
-            $q = $request->query('q'); // 'q' untuk search
+            // 2. Ambil filter dari URL query
+            $subject = $request->query('subject'); // FILTER BERDASARKAN SUBJECT (untuk Layar 3)
+            $q = $request->query('q'); // search
 
             // 3. Mulai Query Builder
             $query = $modelClass::query();
 
-            // 4. Pilih kolom ringan (ganti subject -> category)
+            // 4. Pilih kolom ringan (termasuk subject dan category)
             $query->select([
                 'id',
                 'dataset_name',
-                'category',
+                'subject',   // Untuk filter Layar 3
+                'category',  // Untuk info tambahan (opsional)
             ]);
 
-            // 5. Terapkan filter 'category' (jika ada)
-            if ($category) {
-                $query->where('category', $category);
+            // 5. Terapkan filter 'subject' (jika ada) - UNTUK LAYAR 3
+            if ($subject) {
+                $query->where('subject', $subject);
             }
 
-            // 6. Pencarian judul/kode
+            // 6. Pencarian judul
             if ($q) {
                 $query->where('dataset_name', 'like', "%{$q}%");
             }
@@ -84,17 +87,14 @@ class BpsDatasetController extends Controller
             // 8. Response ringan
             return response()->json($datasets);
         } catch (\Exception $e) {
-            // 9. JIKA TERJADI ERROR DI ATAS (misal, kolom tidak ada)
-            // Catat error di log server
             Log::error('Error in BpsDatasetController@index: ' . $e->getMessage());
 
-            // Kembalikan pesan error sebagai JSON (agar bisa dibaca di Android/Postman)
             return response()->json([
                 'error_A' => 'Terjadi kesalahan pada server.',
                 'error_B_message' => $e->getMessage(),
                 'error_C_file' => $e->getFile(),
                 'error_D_line' => $e->getLine()
-            ], 500); // Kembalikan status 500
+            ], 500);
         }
     }
 
@@ -175,6 +175,12 @@ class BpsDatasetController extends Controller
         ]);
     }
 
+    /**
+     * Get categories with their subjects (for Layer 2: Category & Subject selection)
+     * GET /api/datasets/categories
+     * 
+     * JANGAN DIUBAH - INI SUDAH BENAR
+     */
     public function getCategories(Request $request)
     {
         try {
@@ -193,7 +199,7 @@ class BpsDatasetController extends Controller
 
             // Group subjects by category
             $groupedData = [];
-            
+
             foreach ($categoriesWithSubjects as $item) {
                 $category = $item->category;
                 $subject = $item->subject;
@@ -219,12 +225,11 @@ class BpsDatasetController extends Controller
 
             // Convert associative array ke indexed array dan sort by category name
             $result = array_values($groupedData);
-            usort($result, function($a, $b) {
+            usort($result, function ($a, $b) {
                 return strcmp($a['category'], $b['category']);
             });
 
             return response()->json($result, 200);
-
         } catch (\Exception $e) {
             Log::error('Error in BpsDatasetController@getCategories: ' . $e->getMessage());
 
