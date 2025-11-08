@@ -155,10 +155,8 @@ class BpsContentController extends Controller
                 'title' => 'required|string|max:255',
                 'infographic' => ['required', 'string', 'max:2048', Rule::unique('infographics', 'image_url')], // dedup pakai image_url
                 'date' => 'nullable|string',
-                'subject' => 'nullable|string|max:255',
-                'description' => 'nullable|string',
-                // link tidak wajib (jarang ada di payload)
-            ]);
+                'category' => 'nullable|string|max:255',                'description' => 'nullable|string',
+                'link' => 'required|url|unique:infographics,link',            ]);
 
             if ($validator->fails()) {
                 $errors[] = ['index' => $index, 'errors' => $validator->errors()->all()];
@@ -181,10 +179,10 @@ class BpsContentController extends Controller
             $dataToStore = [
                 'title' => $validated['title'],
                 'image_url' => $validated['infographic'], // dari JSON "infographic"
-                'category' => $validated['subject'] ?? null, // subject -> category
+                'category' => $validated['category'] ?? null, // subject -> category
                 'date' => $formattedDate,
                 'description' => $validated['description'] ?? null,
-                // 'link' => $item['link'] ?? null, // jika suatu saat tersedia
+                'link' => $validated['link'],
             ];
 
             // Hapus null

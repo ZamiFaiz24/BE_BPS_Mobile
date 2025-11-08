@@ -93,7 +93,7 @@
                         </div>
                         {{-- Form Pencarian Sederhana --}}
                         <form method="GET" action="{{ route('admin.dashboard') }}" class="relative mt-4 md:mt-0">
-                            <input type="text" id="search-input" name="q" value="{{ request('q') }}" placeholder="Cari..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-[#0093DD] focus:border-[#0093DD] w-64">
+                            <input type="text" id="search-input" name="q" value="{{ request('q') }}" placeholder="Cari Dataset..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-[#0093DD] focus:border-[#0093DD] w-64">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><x-heroicon-o-magnifying-glass class="w-5 h-5" /></span>
                         </form>
                     </div>
