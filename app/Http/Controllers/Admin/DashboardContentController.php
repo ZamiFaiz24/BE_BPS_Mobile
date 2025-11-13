@@ -152,4 +152,13 @@ class DashboardContentController extends Controller
             return back()->withErrors(['error' => 'Konten tidak ditemukan.']);
         }
     }
+
+    /**
+     * Show the form to create a new content item.
+     */
+    public function create()
+    {
+        // Jika view berada di resources/views/admin/contents/create.blade.php
+        return view('admin.contents.create');
+    }
 }

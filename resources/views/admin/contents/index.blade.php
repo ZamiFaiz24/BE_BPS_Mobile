@@ -1,10 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
-            <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
-                {{ __('Manajemen Konten') }}
-            </h2>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
+                <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
+                    {{ __('Manajemen Konten') }}
+                </h2>
+            </div>
         </div>
     </x-slot>
 
@@ -83,87 +85,75 @@
                         </div>
                     @endif
 
-                    {{-- Form Filter --}}
+                    {{-- Form Filter (toolbar rapi) --}}
                     <form method="GET" action="{{ route('admin.contents.index') }}" class="mb-6" id="filterForm">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            
-                            {{-- Filter Tipe --}}
-                            <div>
-                                <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Tipe Konten</label>
-                                <select name="type" id="type" 
-                                    class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
-                                    <option value="">Semua Tipe</option>
-                                    <option value="news" {{ request('type') == 'news' ? 'selected' : '' }}>Berita</option>
-                                    <option value="press_release" {{ request('type') == 'press_release' ? 'selected' : '' }}>Siaran Pers</option>
-                                    <option value="publication" {{ request('type') == 'publication' ? 'selected' : '' }}>Publikasi</option>
-                                    <option value="infographic" {{ request('type') == 'infographic' ? 'selected' : '' }}>Infografik</option>
-                                </select>
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            {{-- Left controls --}}
+                            <div class="flex flex-1 flex-wrap items-center gap-3">
+                                {{-- Filter Tipe --}}
+                                <div>
+                                    <label for="type" class="block text-xs font-medium text-gray-600 mb-1">Tipe</label>
+                                    <select name="type" id="type"
+                                        class="w-44 md:w-48 border border-[#0093DD] rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
+                                        <option value="">Semua</option>
+                                        <option value="news" {{ request('type') == 'news' ? 'selected' : '' }}>Berita</option>
+                                        <option value="press_release" {{ request('type') == 'press_release' ? 'selected' : '' }}>Siaran Pers</option>
+                                        <option value="publication" {{ request('type') == 'publication' ? 'selected' : '' }}>Publikasi</option>
+                                        <option value="infographic" {{ request('type') == 'infographic' ? 'selected' : '' }}>Infografik</option>
+                                    </select>
+                                </div>
+
+                                {{-- Pencarian Judul --}}
+                                <div class="min-w-[220px] md:min-w-[260px]">
+                                    <label for="q" class="block text-xs font-medium text-gray-600 mb-1">Cari Judul</label>
+                                    <input type="text" name="q" id="q" value="{{ request('q') }}"
+                                        placeholder="Ketik untuk mencari..."
+                                        class="w-full border border-[#0093DD] rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition" />
+                                </div>
+
+                                {{-- Urutkan --}}
+                                <div>
+                                    <label for="sort" class="block text-xs font-medium text-gray-600 mb-1">Urutkan</label>
+                                    <select name="sort" id="sort"
+                                        class="w-44 md:w-48 border border-[#0093DD] rounded-lg px-3 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
+                                        <option value="publish_date_desc" {{ request('sort', 'publish_date_desc') == 'publish_date_desc' ? 'selected' : '' }}>
+                                            Tanggal Rilis Terbaru
+                                        </option>
+                                        <option value="publish_date_asc" {{ request('sort') == 'publish_date_asc' ? 'selected' : '' }}>
+                                            Tanggal Rilis Terlama
+                                        </option>
+                                    </select>
+                                </div>
+
+                                {{-- Reset (opsional) --}}
+                                @if(request('type') || request('q'))
+                                    <a href="{{ route('admin.contents.index') }}"
+                                       class="inline-flex items-center text-xs md:text-sm px-3 py-2 text-[#EB891C] border border-[#EB891C] rounded-lg bg-white font-semibold shadow-sm hover:bg-[#EB891C] hover:text-white transition">
+                                        Reset
+                                    </a>
+                                @endif
                             </div>
 
-                            {{-- Filter Kategori --}}
-                            <div>
-                                <label for="category" class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
-                                <input type="text" name="category" id="category" value="{{ request('category') }}" 
-                                    placeholder="Cari kategori..." 
-                                    class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition" />
-                            </div>
-
-                            {{-- Pencarian Judul --}}
-                            <div>
-                                <label for="q" class="block text-sm font-medium text-gray-700 mb-2">Cari Judul</label>
-                                <input type="text" name="q" id="q" value="{{ request('q') }}" 
-                                    placeholder="Cari judul konten..." 
-                                    class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition" />
-                            </div>
-
-                            {{-- Urutkan --}}
-                            <div>
-                                <label for="sort" class="block text-sm font-medium text-gray-700 mb-2">Urutkan</label>
-                                <select name="sort" id="sort"
-                                    class="w-full border border-[#0093DD] rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-[#0093DD] focus:border-transparent transition">
-                                    <option value="publish_date_desc" {{ request('sort', 'publish_date_desc') == 'publish_date_desc' ? 'selected' : '' }}>
-                                        Tanggal Rilis Terbaru
-                                    </option>
-                                    <option value="publish_date_asc" {{ request('sort') == 'publish_date_asc' ? 'selected' : '' }}>
-                                        Tanggal Rilis Terlama
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {{-- Tombol Aksi --}}
-                        <div class="flex gap-3 mt-4">
-                            <button type="submit" 
-                                class="inline-flex items-center gap-2 bg-[#0093DD] hover:bg-[#0070C0] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 5.5 5.5a7.5 7.5 0 0 0 11.15 11.15Z"/>
-                                </svg>
-                                Cari
-                            </button>
-                            @if(request('type') || request('q') || request('category'))
-                                <a href="{{ route('admin.contents.index') }}" 
-                                   class="inline-flex items-center gap-2 bg-[#EB891C] hover:bg-[#D67A15] text-white font-semibold px-6 py-2 rounded-lg shadow-md transition transform hover:scale-105">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12a7.5 7.5 0 0 1 12.62-5.3M19.5 12a7.5 7.5 0 0 1-12.62 5.3M12 7.5v4.875c0 .207.124.395.316.474l3.369 1.404"/>
+                            {{-- Right: Tambah Konten --}}
+                            <div class="flex-shrink-0">
+                                <a href="{{ route('admin.contents.create') }}"
+                                   class="inline-flex items-center gap-2 bg-[#68B92E] hover:bg-[#4E8C1A] text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                     </svg>
-                                    Reset Filter
+                                    Tambah Konten
                                 </a>
-                            @endif
+                            </div>
                         </div>
 
-                        {{-- Info Filter Aktif --}}
-                        @if(request('type') || request('q') || request('category'))
+                        {{-- Info Filter Aktif (tanpa kategori) --}}
+                        @if(request('type') || request('q'))
                             <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p class="text-sm text-gray-700">
                                     <span class="font-semibold">Filter aktif:</span>
                                     @if(request('type'))
                                         <span class="inline-block bg-[#0093DD] text-white px-2 py-1 rounded text-xs ml-2">
                                             Tipe: {{ ucfirst(str_replace('_', ' ', request('type'))) }}
-                                        </span>
-                                    @endif
-                                    @if(request('category'))
-                                        <span class="inline-block bg-[#68B92E] text-white px-2 py-1 rounded text-xs ml-2">
-                                            Kategori: {{ request('category') }}
                                         </span>
                                     @endif
                                     @if(request('q'))
@@ -303,7 +293,7 @@
         </div>
     </div>
 
-    {{-- SCRIPT: Filter & Search Instan + AJAX Pagination --}}
+    {{-- SCRIPT: Filter & Search Instan + AJAX Pagination (tanpa kategori) --}}
     <script>
         function debounce(func, wait) {
             let timeout;
@@ -316,7 +306,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('filterForm');
             const typeSelect = document.getElementById('type');
-            const categoryInput = document.getElementById('category');
             const qInput = document.getElementById('q');
             const sortSelect = document.getElementById('sort');
             const container = document.getElementById('content-container');
@@ -333,7 +322,6 @@
             function buildParams() {
                 const params = new URLSearchParams(window.location.search);
                 if (typeSelect) setOrDelete(params, 'type', typeSelect.value);
-                if (categoryInput) setOrDelete(params, 'category', categoryInput.value);
                 if (qInput) setOrDelete(params, 'q', qInput.value);
                 if (sortSelect) setOrDelete(params, 'sort', sortSelect.value);
                 return params;
@@ -362,7 +350,6 @@
                         if (newContainer) {
                             container.innerHTML = newContainer.innerHTML;
                         } else {
-                            // Fallback: tampilkan HTML apa adanya
                             container.innerHTML = html;
                         }
                         bindPagination();
@@ -375,7 +362,6 @@
 
             const debouncedFilter = debounce(() => performFilter(true), 400);
 
-            // Cegah submit form default (biar tidak reload halaman)
             if (form) {
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
@@ -383,16 +369,12 @@
                 });
             }
 
-            // Trigger otomatis saat filter berubah
             if (typeSelect) typeSelect.addEventListener('change', () => performFilter(true));
             if (sortSelect) sortSelect.addEventListener('change', () => performFilter(true));
             if (qInput) qInput.addEventListener('input', debouncedFilter);
-            if (categoryInput) categoryInput.addEventListener('input', debouncedFilter);
 
-            // Intercept pagination on initial load
             bindPagination();
 
-            // Handle back/forward browser buttons
             window.addEventListener('popstate', () => {
                 performFilter(false, window.location.href);
             });
