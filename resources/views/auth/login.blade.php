@@ -63,6 +63,12 @@
                     <p class="text-sm text-gray-700"><span class="font-semibold">Password:</span> 123456789</p>
                 </div>
 
+                <!-- Tambah: Pengingat operator percobaan -->
+                <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-[#0093DD] rounded-lg">
+                    <p class="text-sm text-gray-700 mb-1"><span class="font-semibold">Email:</span> operator@bpsapp.com</p>
+                    <p class="text-sm text-gray-700"><span class="font-semibold">Password:</span> password123</p>
+                </div>
+
                 <!-- Session Status -->
                 <x-auth-session-status class="mb-4" :status="session('status')" />
 

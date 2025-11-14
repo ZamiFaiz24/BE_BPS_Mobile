@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DashboardContentController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Admin\SyncController;
+use App\Http\Controllers\Admin\SettingController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -49,7 +50,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
         Route::get('/backup', [\App\Http\Controllers\Admin\SettingController::class, 'backup'])->name('settings.backup');
     });
-;
+    Route::post('/admin/settings', [SettingController::class, 'update'])->name('admin.settings.update');
+    Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
 });
 
 require __DIR__ . '/auth.php';
