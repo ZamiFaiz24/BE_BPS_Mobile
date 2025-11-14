@@ -15,7 +15,10 @@ class SettingController extends Controller
 {
     public function index()
     {
-        // PERBAIKI: Sesuaikan key ini agar konsisten saat mengambil data
+        // Debug: cek semua settings yang ada
+        $allSettings = setting()->all();
+        Log::info('All settings in index', $allSettings);
+
         $settings = [
             'site_name' => setting('site_name', 'Manajemen Dataset BPS'),
             'site_description' => setting('site_description', ''),
@@ -24,19 +27,15 @@ class SettingController extends Controller
             'admin_email' => setting('admin_email', ''),
             'sync_schedule' => setting('sync_schedule', 'disabled'),
             'scraping_timeout' => setting('scraping_timeout', 30),
-            'bps_base_url' => setting('bps_base_url', 'https://kebumenkab.bps.go.id'), // Tambahkan ini
-            'bps_api_key' => env('BPS_API_KEY', ''), // Gunakan bps_api_key
+            'bps_base_url' => setting('bps_base_url', 'https://kebumenkab.bps.go.id'),
+            'bps_api_key' => env('BPS_API_KEY', ''),
             'maintenance_mode' => setting('maintenance_mode', false),
             'email_notifications' => setting('email_notifications', false),
             'mail_from_name' => setting('mail_from_name', ''),
             'last_sync' => setting('last_sync', 'Belum pernah'),
         ];
-        // Pastikan Anda meneruskan 'settings' ke view yang benar
-        // return view('admin.settings.index', compact('settings'));
 
-        // Asumsi dari kode sebelumnya, Anda mem-pass 'settings'
-        // Jika nama view Anda 'admin.settings', ganti di bawah:
-        return view('admin.settings.index', compact('settings')); // Sesuaikan nama view jika perlu
+        return view('admin.settings.index', compact('settings'));
     }
 
     /**
@@ -44,9 +43,9 @@ class SettingController extends Controller
      */
     public function update(Request $request)
     {
-        Log::info('Settings update request received', $request->all());
+        Log::info('=== Settings Update Start ===');
+        Log::info('Request all data', $request->all());
 
-        // PERBAIKI: Validasi disesuaikan dengan 'name' di form Blade
         $validated = $request->validate([
             'site_name' => 'nullable|string|max:100',
             'site_description' => 'nullable|string|max:255',
@@ -55,26 +54,65 @@ class SettingController extends Controller
             'site_favicon' => 'nullable|image|mimes:png,ico|max:1024',
             'sync_schedule' => 'nullable|string|max:50',
             'scraping_timeout' => 'nullable|integer|min:10|max:300',
-            'bps_base_url' => 'nullable|url', // Tambahkan ini
-            'bps_api_key' => 'nullable|string|max:255', // Ganti dari 'api_key'
-            'password' => 'nullable|string|min:8|confirmed', // Ganti dari 'new_password'
+            'bps_base_url' => 'nullable|url',
+            'bps_api_key' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:8|confirmed',
             'maintenance_mode' => 'nullable|boolean',
             'email_notifications' => 'nullable|boolean',
             'mail_from_name' => 'nullable|string|max:255',
         ]);
 
-        // PERBAIKI: Simpan dengan key yang benar
-        setting([
-            'site_name' => $validated['site_name'] ?? setting('site_name'),
-            'site_description' => $validated['site_description'] ?? setting('site_description'),
-            'admin_email' => $validated['admin_email'] ?? setting('admin_email'),
-            'sync_schedule' => $validated['sync_schedule'] ?? setting('sync_schedule', 'disabled'),
-            'scraping_timeout' => $validated['scraping_timeout'] ?? setting('scraping_timeout', 30),
-            'bps_base_url' => $validated['bps_base_url'] ?? setting('bps_base_url'), // Tambahkan ini
-            'maintenance_mode' => $request->has('maintenance_mode') ? 1 : 0,
-            'email_notifications' => $request->has('email_notifications') ? 1 : 0,
-            'mail_from_name' => $validated['mail_from_name'] ?? setting('mail_from_name'),
-        ]);
+        try {
+            // Simpan settings satu per satu untuk memastikan tersimpan
+            if ($request->filled('site_name')) {
+                setting(['site_name' => $request->site_name]);
+                Log::info('Saved site_name', ['value' => $request->site_name]);
+            }
+
+            if ($request->filled('site_description')) {
+                setting(['site_description' => $request->site_description]);
+                Log::info('Saved site_description', ['value' => $request->site_description]);
+            }
+
+            if ($request->filled('admin_email')) {
+                setting(['admin_email' => $request->admin_email]);
+                Log::info('Saved admin_email', ['value' => $request->admin_email]);
+            }
+
+            if ($request->filled('mail_from_name')) {
+                setting(['mail_from_name' => $request->mail_from_name]);
+                Log::info('Saved mail_from_name', ['value' => $request->mail_from_name]);
+            }
+
+            // Sync schedule dan timeout (selalu simpan)
+            setting([
+                'sync_schedule' => $request->input('sync_schedule', 'disabled'),
+                'scraping_timeout' => $request->input('scraping_timeout', 30),
+            ]);
+
+            // Checkbox (selalu simpan)
+            setting([
+                'maintenance_mode' => $request->has('maintenance_mode') ? 1 : 0,
+                'email_notifications' => $request->has('email_notifications') ? 1 : 0,
+            ]);
+
+            if ($request->filled('bps_base_url')) {
+                setting(['bps_base_url' => $request->bps_base_url]);
+            }
+
+            // PENTING: Simpan semua perubahan ke database
+            setting()->save();
+            Log::info('Settings saved to database');
+
+            // Debug: cek semua settings setelah save
+            Log::info('All settings after save', setting()->all());
+        } catch (\Exception $e) {
+            Log::error('Failed to save settings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['error' => 'Gagal menyimpan pengaturan: ' . $e->getMessage()]);
+        }
 
         // Handle API Key - simpan ke .env untuk keamanan
         // PERBAIKI: Cek 'bps_api_key'
@@ -132,7 +170,7 @@ class SettingController extends Controller
             }
         }
 
-        Log::info('Settings update completed');
+        Log::info('=== Settings Update End ===');
         return back()->with('status', 'Pengaturan berhasil diperbarui!');
     }
 

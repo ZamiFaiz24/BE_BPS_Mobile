@@ -10,7 +10,8 @@ Sistem dashboard BPS baru saja mengalami kegagalan saat mencoba sinkronisasi dat
 
 Mohon segera periksa log sistem atau coba jalankan sinkronisasi manual di dashboard.
 
-@component('mail::button', ['url' => route('admin.settings'), 'color' => 'error'])
+{{-- PERBAIKAN ADA DI BARIS INI --}}
+@component('mail::button', ['url' => url('/admin/settings'), 'color' => 'error'])
 Buka Halaman Pengaturan
 @endcomponent
 

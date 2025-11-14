@@ -284,29 +284,91 @@
                 
                 {{-- Panel 4: Notifikasi Email --}}
                 <div x-show="tab === 'notifikasi'" x-cloak>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="{ editMode: false }">
                         <div class="p-6 space-y-5">
+                            <!-- Header dengan Tombol Edit -->
+                            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Konfigurasi Email</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Kelola email notifikasi dan pengirim</p>
+                                </div>
+                                <button type="button" 
+                                        @click="editMode = !editMode"
+                                        :class="editMode ? 'bg-gray-500 hover:bg-gray-600' : 'bg-[#0093DD] hover:bg-[#0080C0]'"
+                                        class="px-4 py-2 text-white text-sm font-medium rounded-md transition shadow-sm flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path x-show="!editMode" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <path x-show="editMode" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    <span x-text="editMode ? 'Batal Edit' : 'Edit Konfigurasi'"></span>
+                                </button>
+                            </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Admin</label>
-                                <input type="email" name="admin_email"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD]"
+                                <input type="email" 
+                                       name="admin_email"
+                                       :disabled="!editMode"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                                        value="{{ old('admin_email', $settings['admin_email'] ?? '') }}"
-                                       placeholder="admin@example.com">
+                                       :placeholder="editMode ? 'admin@example.com' : 'Email tersimpan dengan aman'">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span x-show="!editMode">
+                                        @if(!empty($settings['admin_email']))
+                                            🔒 Tersimpan: <span class="font-medium text-gray-700">{{ $settings['admin_email'] }}</span>
+                                        @else
+                                            🔒 Belum ada email admin yang tersimpan
+                                        @endif
+                                    </span>
+                                    <span x-show="editMode">Email untuk menerima notifikasi penting</span>
+                                </p>
                             </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pengirim</label>
-                                <input type="text" name="mail_from_name"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD]"
+                                <input type="text" 
+                                       name="mail_from_name"
+                                       :disabled="!editMode"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                                        value="{{ old('mail_from_name', $settings['mail_from_name'] ?? '') }}"
-                                       placeholder="BPS Dashboard">
+                                       :placeholder="editMode ? 'BPS Dashboard' : 'Nama pengirim tersimpan'">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span x-show="!editMode">
+                                        @if(!empty($settings['mail_from_name']))
+                                            🔒 Tersimpan: <span class="font-medium text-gray-700">{{ $settings['mail_from_name'] }}</span>
+                                        @else
+                                            🔒 Belum ada nama pengirim yang tersimpan
+                                        @endif
+                                    </span>
+                                    <span x-show="editMode">Nama yang akan tampil sebagai pengirim email</span>
+                                </p>
                             </div>
+
                             <div class="pt-4 border-t border-gray-200">
                                 <label class="flex items-center cursor-pointer group">
-                                    <input type="checkbox" name="email_notifications" value="1" 
-                                           class="w-4 h-4 text-[#0093DD] border-gray-300 rounded focus:ring-[#0093DD]"
+                                    <input type="checkbox" 
+                                           name="email_notifications" 
+                                           value="1"
+                                           :disabled="!editMode"
+                                           class="w-4 h-4 text-[#0093DD] border-gray-300 rounded focus:ring-[#0093DD] disabled:opacity-50 disabled:cursor-not-allowed"
                                            {{ !empty($settings['email_notifications']) ? 'checked' : '' }}>
                                     <span class="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Aktifkan Notifikasi Email</span>
-                                </LAbel>
+                                </label>
+                            </div>
+
+                            <!-- Info Status Edit Mode -->
+                            <div x-show="editMode" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+                                <div class="flex">
+                                    <svg class="h-5 w-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm text-blue-700 font-medium">Mode Edit Aktif</p>
+                                        <p class="text-xs text-blue-600 mt-1">Jangan lupa klik tombol "Simpan Perubahan" di bawah setelah selesai mengedit.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -3,57 +3,50 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue; // Tidak terpakai, bisa hapus jika mau
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Address; // Kita tambahkan ini
+use Illuminate\Mail\Mailables\Address; // 1. Pastikan ini di-import
 
 class SyncFailedNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Variabel publik ini akan otomatis tersedia di file view Blade
-     */
     public $errorMessage;
 
     /**
-     * Buat instance pesan baru.
-     *
-     * @param string $errorMessage Pesan error yang terjadi
+     * Create a new message instance.
      */
     public function __construct($errorMessage)
     {
-        // Saat kita memanggil mailer ini, kita akan memberinya pesan error
         $this->errorMessage = $errorMessage;
     }
 
     /**
-     * Dapatkan 'amplop' (pengirim & subjek) pesan.
+     * Get the message envelope.
      */
     public function envelope(): Envelope
     {
-        // Ambil "Nama Pengirim" dari setting Anda
+        // 2. KEMBALIKAN BAGIAN 'FROM' INI
+        // Ini mengambil "Nama Pengirim" dari setting Anda
         $fromName = setting('mail_from_name', 'Sistem Dashboard BPS');
-
-        // Ambil alamat email 'from' dari .env
         $fromEmail = config('mail.from.address', 'no-reply@example.com');
 
         return new Envelope(
-            from: new Address($fromEmail, $fromName),
-            subject: '[PERINGATAN] Sinkronisasi Data Gagal',
+            from: new Address($fromEmail, $fromName), // 3. Tambahkan baris ini
+            subject: '🚨 Sinkronisasi Data BPS Gagal', // Subjek Anda sudah benar
         );
     }
 
     /**
-     * Dapatkan 'isi' (template view) pesan.
+     * Get the message content definition.
      */
     public function content(): Content
     {
         return new Content(
-            // Ini adalah nama file Blade yang akan kita BUAT SELANJUTNYA
+            // 4. GANTI 'view:' KEMBALI KE 'markdown:'
             markdown: 'emails.sync.failed',
             with: [
                 'errorMessage' => $this->errorMessage,
@@ -62,9 +55,7 @@ class SyncFailedNotification extends Mailable
     }
 
     /**
-     * Dapatkan lampiran (attachments) untuk pesan.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * Get the attachments for the message.
      */
     public function attachments(): array
     {
