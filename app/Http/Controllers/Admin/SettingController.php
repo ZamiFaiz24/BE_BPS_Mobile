@@ -56,7 +56,6 @@ class SettingController extends Controller
             'scraping_timeout' => 'nullable|integer|min:10|max:300',
             'bps_base_url' => 'nullable|url',
             'bps_api_key' => 'nullable|string|max:255',
-            'password' => 'nullable|string|min:8|confirmed',
             'maintenance_mode' => 'nullable|boolean',
             'email_notifications' => 'nullable|boolean',
             'mail_from_name' => 'nullable|string|max:255',
@@ -148,26 +147,6 @@ class SettingController extends Controller
             }
             $path = $request->file('site_favicon')->store('settings', 'public');
             setting(['site_favicon' => $path]); // Simpan path relatif
-        }
-
-        // Ganti password admin jika diisi (gunakan Eloquent User untuk memastikan method 'save' ada)
-        if ($request->filled('password')) {
-            $hashed = Hash::make($validated['password']);
-            $userId = Auth::id();
-
-            if ($userId) {
-                $user = User::find($userId);
-                if ($user instanceof User) {
-                    // Eloquent model instance — aman memanggil save()
-                    $user->password = $hashed;
-                    $user->save();
-                } else {
-                    // Fallback: update via query builder jika model tidak tersedia
-                    User::whereKey($userId)->update(['password' => $hashed]);
-                }
-            } else {
-                Log::warning('Password update skipped: no authenticated user ID.');
-            }
         }
 
         Log::info('=== Settings Update End ===');

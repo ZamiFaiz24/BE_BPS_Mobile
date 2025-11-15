@@ -52,12 +52,6 @@
                             Pengaturan Umum
                         </button>
                         <button type="button" 
-                                @click="tab = 'keamanan'"
-                                :class="{ 'border-[#0093DD] text-[#0093DD]': tab === 'keamanan', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'keamanan' }"
-                                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                            Keamanan
-                        </button>
-                        <button type="button" 
                                 @click="tab = 'sinkronisasi'"
                                 :class="{ 'border-[#0093DD] text-[#0093DD]': tab === 'sinkronisasi', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'sinkronisasi' }"
                                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -136,28 +130,7 @@
                     </div>
                 </div>
                 
-                {{-- Panel 2: Keamanan --}}
-                <div x-show="tab === 'keamanan'" x-cloak>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="p-6 space-y-5">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
-                                <input type="password" name="password"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD]"
-                                       placeholder="Minimal 8 karakter">
-                                <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah password</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
-                                <input type="password" name="password_confirmation"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#0093DD] focus:border-[#0093DD]"
-                                       placeholder="Ulangi password baru">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Panel 3: Sinkronisasi & API --}}
+                {{-- Panel 2: Sinkronisasi & API --}}
                 <div x-show="tab === 'sinkronisasi'" x-cloak>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="{ editMode: false }">
                         <div class="p-6 space-y-5">

@@ -25,18 +25,22 @@
                     </x-nav-link>
 
                     {{-- Link Konten --}}
+                    @can('view content')
                     <x-nav-link :href="route('admin.contents.index')" :active="request()->routeIs('admin.contents.*')"
                         class="{{ $baseClass }} {{ request()->routeIs('admin.contents.*') ? $activeClass : $inactiveClass }}">
                         <x-heroicon-o-clipboard-document-list class="w-5 h-5" />
                         {{ __('Konten') }}
                     </x-nav-link>
+                    @endcan
 
-                    {{-- Link Pengaturan --}}
-                    <x-nav-link :href="route('admin.settings')" :active="request()->routeIs('admin.settings')"
-                        class="{{ $baseClass }} {{ request()->routeIs('admin.settings') ? $activeClass : $inactiveClass }}">
+                    {{-- Menu Pengaturan: HANYA Super Admin --}}
+                    @can('view settings')
+                    <x-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.*')"
+                        class="{{ $baseClass }} {{ request()->routeIs('admin.settings.index') ? $activeClass : $inactiveClass }}">
                         <x-heroicon-o-cog-6-tooth class="w-5 h-5" />
                         {{ __('Pengaturan') }}
                     </x-nav-link>
+                    @endcan
                 </div>
 
                 <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -107,7 +111,7 @@
                 {{ __('Konten') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('admin.settings')" :active="request()->routeIs('admin.settings')"
+            <x-responsive-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.*')"
                 class="{{ request()->routeIs('admin.settings') ? $mobileActive : $mobileInactive }}">
                 <x-heroicon-o-cog-6-tooth class="w-5 h-5" />
                 {{ __('Pengaturan') }}

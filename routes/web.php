@@ -4,54 +4,86 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DashboardContentController;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Admin\SyncController;
 use App\Http\Controllers\Admin\SettingController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+
+// --- RUTE PUBLIK & AUTENTIKASI DASAR ---
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Ini adalah route dashboard untuk user biasa
+// Ini adalah route dashboard BREEZE default (jika ada user non-admin)
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Ini adalah route untuk halaman profile user
+// Rute untuk Halaman PROFIL (bisa diakses semua user)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+
+// --- RUTE PANEL ADMIN (/admin) ---
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Alias kompatibel lama
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings');
 
-    Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
-    Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
+    /*
+    |--------------------------------------------------------------------------
+    | GRUP 1: RUTE KONTEN (Akses: Super Admin & Operator)
+    |--------------------------------------------------------------------------
+    | Rute di sini dilindungi oleh izin 'view content', 
+    | yang dimiliki oleh kedua role.
+    */
+    Route::middleware(['can:view content'])->group(function () {
 
-    // Kelompokkan semua route dataset
-    Route::prefix('datasets')->name('datasets.')->group(function () {
-        Route::get('/ajax-filter', [DashboardController::class, 'ajaxFilter'])->name('ajax-filter');
-        Route::get('/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('ajax-search');
-        Route::patch('/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('update_insight');
-        Route::get('/{dataset}', [DashboardController::class, 'show'])->name('show');
-        Route::delete('/{dataset}', [DashboardController::class, 'destroy'])->name('destroy');
-        Route::get('/{dataset}/edit', [DashboardController::class, 'edit'])->name('edit');
-        Route::patch('/{dataset}', [DashboardController::class, 'update'])->name('update');
+        // Dashboard Admin
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Resource Konten
+        Route::resource('contents', DashboardContentController::class);
+
+        // Kelompok Rute Dataset
+        Route::prefix('datasets')->name('datasets.')->group(function () {
+            Route::get('/ajax-filter', [DashboardController::class, 'ajaxFilter'])->name('ajax-filter');
+            Route::get('/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('ajax-search');
+            Route::patch('/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('update_insight');
+            Route::get('/{dataset}', [DashboardController::class, 'show'])->name('show');
+            Route::delete('/{dataset}', [DashboardController::class, 'destroy'])->name('destroy');
+            Route::get('/{dataset}/edit', [DashboardController::class, 'edit'])->name('edit');
+            Route::patch('/{dataset}', [DashboardController::class, 'update'])->name('update');
+        });
     });
 
-    Route::resource('contents', DashboardContentController::class);
 
-    Route::prefix('settings')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('settings');
-        Route::post('/', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
-        Route::get('/backup', [\App\Http\Controllers\Admin\SettingController::class, 'backup'])->name('settings.backup');
+    /*
+    |--------------------------------------------------------------------------
+    | GRUP 2: RUTE SISTEM (Akses: HANYA Super Admin)
+    |--------------------------------------------------------------------------
+    | Rute di sini dilindungi oleh izin 'view settings', 
+    | yang HANYA dimiliki oleh super-admin.
+    */
+    Route::middleware(['can:view settings'])->group(function () {
+
+        // Kelompok Rute Pengaturan
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingController::class, 'index'])->name('index'); // -> admin.settings.index
+            Route::post('/', [SettingController::class, 'update'])->name('update'); // -> admin.settings.update
+            Route::get('/backup', [SettingController::class, 'backup'])->name('backup'); // -> admin.settings.backup
+        });
+
+        // Rute Sinkronisasi
+        Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
+        Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
     });
-    Route::post('/admin/settings', [SettingController::class, 'update'])->name('admin.settings.update');
-    Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
 });
 
+
+// File auth bawaan
 require __DIR__ . '/auth.php';
