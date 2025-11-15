@@ -6,20 +6,26 @@
     <div class="mb-6 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-800">Manajemen Dataset</h1>
         
-        {{-- Tombol Sync: HANYA Super Admin --}}
-        @can('view settings')
+        {{-- Tombol Sync: Gunakan izin 'run sync' --}}
+        @can('run sync')
         <div class="flex gap-3">
             <form method="POST" action="{{ route('admin.sync.all') }}" class="inline">
                 @csrf
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    🔄 Sync Semua
+                <button type="submit" 
+                        onclick="return confirm('Yakin ingin sinkronisasi semua dataset?')"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center gap-2">
+                    <svg class...></svg>
+                    Sync Semua
                 </button>
             </form>
             
             <form method="POST" action="{{ route('admin.sync.manual') }}" class="inline">
                 @csrf
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                    ⚡ Sync Manual
+                <button type="submit" 
+                        onclick="return confirm('Yakin ingin sinkronisasi manual?')"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2">
+                    <svg class...></svg>
+                    Sync Manual
                 </button>
             </form>
         </div>
@@ -41,23 +47,26 @@
                 <tr>
                     <td class="px-6 py-4">{{ $dataset->title }}</td>
                     <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs rounded {{ $dataset->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                        <span class ...>
                             {{ $dataset->is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
                     </td>
                     <td class="px-6 py-4 flex gap-2">
+                        
+                        {{-- Tombol Lihat (semua role yang punya 'view datasets' bisa) --}}
                         <a href="{{ route('admin.datasets.show', $dataset->id) }}" class="text-blue-600 hover:text-blue-800">
                             👁️ Lihat
                         </a>
                         
-                        @can('view content')
+                        {{-- Tombol Edit: Gunakan izin 'edit datasets' --}}
+                        @can('edit datasets')
                         <a href="{{ route('admin.datasets.edit', $dataset->id) }}" class="text-yellow-600 hover:text-yellow-800">
                             ✏️ Edit
                         </a>
                         @endcan
                         
-                        {{-- Tombol Hapus: HANYA Super Admin --}}
-                        @can('view settings')
+                        {{-- Tombol Hapus: Gunakan izin 'delete datasets' --}}
+                        @can('delete datasets')
                         <form method="POST" action="{{ route('admin.datasets.destroy', $dataset->id) }}" class="inline">
                             @csrf
                             @method('DELETE')
