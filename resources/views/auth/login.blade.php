@@ -20,18 +20,17 @@
                         <p class="text-white/90 mt-2 text-lg drop-shadow">Sistem Informasi Statistik</p>
                     </div>
                     
-                    <!-- Info cards dengan shadow -->
-                    <div class="space-y-2 pt-4">
-                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                            📊 Dashboard Real-time
-                        </div>
-                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                            🔒 Keamanan Terjamin
-                        </div>
-                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                            ⚡ Akses Cepat
-                        </div>
+                   <div class="space-y-2 pt-4">
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
+                        🏛️ Sistem Resmi Internal BPS
                     </div>
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
+                        🗃️ Manajemen Data Terpusat
+                    </div>
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
+                        🔒 Akses Aman & Terbatas
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -41,7 +40,7 @@
                     <!-- Header -->
                     <div class="text-center">
                         <h2 class="text-3xl font-bold text-gray-800">Selamat Datang</h2>
-                        <p class="text-gray-600 mt-2">Masuk ke BPS Mobile Dashboard</p>
+                        <p class="text-gray-600 mt-2">Sistem Internal BPS Kabupaten Kebumen</p>
                     </div>
 
                     <!-- Demo Credentials -->
@@ -101,13 +100,11 @@
                         </button>
                     </form>
 
-                    <!-- Footer -->
-                    <div class="text-center">
-                        <p class="text-sm text-gray-600">
-                            Belum punya akun? 
-                            <a href="{{ route('register') }}" class="font-semibold text-[#0093DD] hover:underline">
-                                Daftar
-                            </a>
+                    <!-- Footer - HAPUS link daftar -->
+                    <div class="text-center pt-4 border-t border-gray-200">
+                        <p class="text-xs text-gray-500">
+                            🔒 Sistem ini hanya untuk pegawai BPS yang berwenang.<br>
+                            Hubungi administrator untuk mendapatkan akses.
                         </p>
                     </div>
                 </div>
