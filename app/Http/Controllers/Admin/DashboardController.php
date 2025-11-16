@@ -16,21 +16,37 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = \App\Models\BpsDataset::query();
+        $query = BpsDataset::query();
 
+        // Filter kategori
         if ($request->filled('category')) {
-            $query->where('category', $request->category);
+            $query->whereIn('category_id', (array) $request->category);
         }
 
+        // Filter subjek
         if ($request->filled('subject')) {
             $query->whereIn('subject', (array) $request->subject);
         }
 
+        // Pencarian
         if ($request->filled('q')) {
             $query->where('dataset_name', 'like', '%' . $request->q . '%');
         }
 
-        $datasets = $query->orderBy('dataset_name')->paginate(10)->withQueryString();
+        // Sorting
+        $sortField = $request->get('sort', 'last_update');
+        $sortOrder = $request->get('order', 'desc');
+
+        $allowedSorts = ['dataset_name', 'subject', 'last_update', 'source', 'created_at'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortOrder);
+        } else {
+            $query->orderBy('last_update', 'desc');
+        }
+
+        $perPage = $request->input('per_page', 10);
+
+        $datasets = $query->paginate($perPage)->withQueryString();
 
         $datasetCount = \App\Models\BpsDataset::count();
         $valueCount = \App\Models\BpsDatavalue::count();

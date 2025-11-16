@@ -232,239 +232,171 @@ return [
         //     ],
         // ],
 
-        [
-            'model'        => 'data',
-            'name'         => 'Jumlah Dusun, Rukun Warga (RW), dan Rukun Tetangga (RT) Menurut Kecamatan di Kabupaten Kebumen',
-            'variable_id'  => 303,
-            'unit'         => 'Unit',
-            'tahun_mulai'  => 2022,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'default',
-            'category'     => 3,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-
-        [
-            'model'        => 'data',
-            'name'         => 'Angka Beban Ketergantungan di Kabupaten Kebumen',
-            'variable_id'  => 770,
-            'unit'         => 'Indeks',
-            'tahun_mulai'  => 2017,
-            'tahun_akhir'  => 2022,
-            'insight_type' => 'number_lower_is_better', // was lower_is_better
-            'category'     => 1,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-
-        // Dataset Pariwisata
-        [
-            'model'        => 'data',
-            'name'         => 'Jumlah Perjalanan Wisatawan Nusantara dengan Tujuan Kabupaten Kebumen',
-            'variable_id'  => 771,
-            'unit'         => 'Perjalanan',
-            'tahun_mulai'  => 2019,
-            'tahun_akhir'  => 2024,
-            'insight_type' => 'number_higher_is_better', // was higher_is_better
-            'category'     => 3,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-        [
-            'model'        => 'data',
-            'name'         => 'Jumlah Perjalanan Wisatawan Nusantara dari Asal Kabupaten Kebumen',
-            'variable_id'  => 772,
-            'unit'         => 'Perjalanan',
-            'tahun_mulai'  => 2019,
-            'tahun_akhir'  => 2024,
-            'insight_type' => 'number_higher_is_better', // was higher_is_better
-            'category'     => 3,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-        [
-            'model'        => 'data',
-            'name'         => 'Jumlah Wisatawan Mancanegara dan Domestik di Kabupaten Kebumen',
-            'variable_id'  => 165,
-            'unit'         => 'Orang',
-            'tahun_mulai'  => 2018,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'number_higher_is_better', // was higher_is_better
-            'category'     => 3,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-
-        // Dataset Biaya Tenaga Kerja
-        [
-            'model'        => 'data',
-            'name'         => 'Rata-rata Upah/Gaji Bersih Sebulan Pekerja Formal Menurut Lapangan Pekerjaan Utama di Kabupaten Kebumen',
-            'variable_id'  => 827,
-            'unit'         => 'Rupiah',
-            'tahun_mulai'  => 2019,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'number_higher_is_better', // was higher_is_better
-            'category'     => 1,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
-        [
-            'model'        => 'data',
-            'name'         => 'Rata-rata Pendapatan Bersih Sebulan Pekerja Informal Menurut Lapangan Pekerjaan Utama di Kabupaten Kebumen',
-            'variable_id'  => 826,
-            'unit'         => 'Rupiah',
-            'tahun_mulai'  => 2019,
-            'tahun_akhir'  => 2023,
-            'insight_type' => 'number_higher_is_better', // was higher_is_better
-            'category'     => 1,
-            'params'       => [
-                'domain' => '3305',
-            ],
-        ],
         // [
         //     'model'        => 'data',
-        //     'name'         => 'Rata-rata Pendapatan Bersih Sebulan Pekerja Informal dan Pendidikan Tertinggi yang Ditamatkan di Kabupaten Kebumen',
-        //     'variable_id'  => 600,
+        //     'name'         => 'Jumlah Dusun, Rukun Warga (RW), dan Rukun Tetangga (RT) Menurut Kecamatan di Kabupaten Kebumen',
+        //     'variable_id'  => 303,
+        //     'unit'         => 'Unit',
+        //     'tahun_mulai'  => 2022,
+        //     'tahun_akhir'  => 2023,
+        //     'insight_type' => 'default',
+        //     'category'     => 3,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
+
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Angka Beban Ketergantungan di Kabupaten Kebumen',
+        //     'variable_id'  => 770,
+        //     'unit'         => 'Indeks',
+        //     'tahun_mulai'  => 2017,
+        //     'tahun_akhir'  => 2022,
+        //     'insight_type' => 'number_lower_is_better', // was lower_is_better
+        //     'category'     => 1,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
+
+        // Dataset Pariwisata
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Jumlah Perjalanan Wisatawan Nusantara dengan Tujuan Kabupaten Kebumen',
+        //     'variable_id'  => 771,
+        //     'unit'         => 'Perjalanan',
+        //     'tahun_mulai'  => 2019,
+        //     'tahun_akhir'  => 2024,
+        //     'insight_type' => 'number_higher_is_better', // was higher_is_better
+        //     'category'     => 2,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Jumlah Perjalanan Wisatawan Nusantara dari Asal Kabupaten Kebumen',
+        //     'variable_id'  => 772,
+        //     'unit'         => 'Perjalanan',
+        //     'tahun_mulai'  => 2019,
+        //     'tahun_akhir'  => 2024,
+        //     'insight_type' => 'number_higher_is_better', // was higher_is_better
+        //     'category'     => 2,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Jumlah Wisatawan Mancanegara dan Domestik di Kabupaten Kebumen',
+        //     'variable_id'  => 165,
+        //     'unit'         => 'Orang',
+        //     'tahun_mulai'  => 2018,
+        //     'tahun_akhir'  => 2023,
+        //     'insight_type' => 'number_higher_is_better', // was higher_is_better
+        //     'category'     => 2,
+        //     'params'       => [
+        //         'domain' => '3305',
+        //     ],
+        // ],
+
+        // Dataset Biaya Tenaga Kerja
+        // [
+        //     'model'        => 'data',
+        //     'name'         => 'Rata-rata Upah/Gaji Bersih Sebulan Pekerja Formal Menurut Lapangan Pekerjaan Utama di Kabupaten Kebumen',
+        //     'variable_id'  => 827,
         //     'unit'         => 'Rupiah',
         //     'tahun_mulai'  => 2019,
         //     'tahun_akhir'  => 2023,
         //     'insight_type' => 'number_higher_is_better', // was higher_is_better
-        //     'category'     => 1,
+        //     'category'     => 2,
         //     'params'       => [
         //         'domain' => '3305',
         //     ],
         // ],
         // [
         //     'model'        => 'data',
-        //     'name'         => 'Upah Minimum Kabupaten/Kota di Kabupaten Kebumen',
-        //     'variable_id'  => 590,
+        //     'name'         => 'Rata-rata Pendapatan Bersih Sebulan Pekerja Informal Menurut Lapangan Pekerjaan Utama di Kabupaten Kebumen',
+        //     'variable_id'  => 826,
         //     'unit'         => 'Rupiah',
-        //     'tahun_mulai'  => 2007,
-        //     'tahun_akhir'  => 2024,
+        //     'tahun_mulai'  => 2019,
+        //     'tahun_akhir'  => 2023,
         //     'insight_type' => 'number_higher_is_better', // was higher_is_better
-        //     'category'     => 1,
+        //     'category'     => 2,
         //     'params'       => [
         //         'domain' => '3305',
         //     ],
         // ],
+        
+        
+        [
+            'model'        => 'data',
+            'name'         => 'Ukuran Ketimpangan Gini Rasio di Kabupaten Kebumen',
+            'variable_id'  => 687,
+            'unit'         => 'Rasio',
+            'tahun_mulai'  => 2000,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'number_lower_is_better',
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
+        [
+            'model'        => 'data',
+            'name'         => 'Indeks Kedalaman Kemiskinan (P1) (Persen) di Kabupaten Kebumen',
+            'variable_id'  => 289,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2002,
+            'tahun_akhir'  => 2024,
+            'insight_type' => 'percent_lower_is_better',
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
+        [
+            'model'        => 'data',
+            'name'         => 'Indeks Keparahan Kemiskinan (P2) (Persen) di Kabupaten Kebumen',
+            'variable_id'  => 290,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2002,
+            'tahun_akhir'  => 2024,
+            'insight_type' => 'percent_lower_is_better',
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
+        [
+            'model'        => 'data',
+            'name'         => '[Metode Baru] Indeks Pembangunan Manusia Kabupaten Kebumen',
+            'variable_id'  => 111,
+            'unit'         => 'Indeks',
+            'tahun_mulai'  => 2010,
+            'tahun_akhir'  => 2024,
+            'insight_type' => 'number_higher_is_better',
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
 
-        // [
-        //     'model'        => 'data',
-        //     'name'         => '[IKG] Indeks Ketimpangan Gender di Kabupaten Kebumen',
-        //     'variable_id'  => 271,
-        //     'unit'         => 'Indeks',
-        //     'tahun_mulai'  => 2018,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'number_lower_is_better', // was lower_is_better
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'Usia Harapan Hidup (UHH) Hasil Long Form SP2020 Menurut Jenis Kelamin',
-        //     'variable_id'  => 869,
-        //     'unit'         => 'Tahun',
-        //     'tahun_mulai'  => 2020,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'number_higher_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => '[IKG] Tingkat Partisipasi Angkatan Kerja (TPAK) Menurut Jenis Kelamin',
-        //     'variable_id'  => 724,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2018,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'percent_higher_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => '[IKG] Persentase Penduduk Usia 25 tahun ke atas dengan Pendidikan SMA ke atas Menurut Jenis Kelamin di Kabupaten Kebumen',
-        //     'variable_id'  => 253,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2018,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'percent_higher_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'Ukuran Ketimpangan Gini Rasio di Kabupaten Kebumen',
-        //     'variable_id'  => 687,
-        //     'unit'         => 'Rasio',
-        //     'tahun_mulai'  => 2000,
-        //     'tahun_akhir'  => 2023,
-        //     'insight_type' => 'number_lower_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'Indeks Kedalaman Kemiskinan (P1) (Persen) di Kabupaten Kebumen',
-        //     'variable_id'  => 289,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2002,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'percent_lower_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'Indeks Keparahan Kemiskinan (P2) (Persen) di Kabupaten Kebumen',
-        //     'variable_id'  => 290,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2002,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'percent_lower_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => '[Metode Baru] Indeks Pembangunan Manusia Kabupaten Kebumen',
-        //     'variable_id'  => 111,
-        //     'unit'         => 'Indeks',
-        //     'tahun_mulai'  => 2010,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'number_higher_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'Indeks Pembangunan Manusia Kabupaten Kebumen (Umur Harapan Hidup Hasil Long Form SP2020)',
-        //     'variable_id'  => 674,
-        //     'unit'         => 'Indeks',
-        //     'tahun_mulai'  => 2020,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'number_higher_is_better',
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
-        // [
-        //     'model'        => 'data',
-        //     'name'         => 'UHH, HLS, RLS, Pengeluaran Riil per Kapita, IPM Menurut Jenis Kelamin',
-        //     'variable_id'  => 702,
-        //     'unit'         => 'Beragam',
-        //     'tahun_mulai'  => 2014,
-        //     'tahun_akhir'  => 2024,
-        //     'insight_type' => 'default', // mixed indicators -> keep neutral
-        //     'category'     => 1,
-        //     'params'       => ['domain' => '3305'],
-        // ],
+        [
+            'model'        => 'data',
+            'name'         => 'Indeks Pembangunan Manusia Kabupaten Kebumen (Umur Harapan Hidup Hasil Long Form SP2020)',
+            'variable_id'  => 674,
+            'unit'         => 'Indeks',
+            'tahun_mulai'  => 2020,
+            'tahun_akhir'  => 2024,
+            'insight_type' => 'number_higher_is_better',
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
+        [
+            'model'        => 'data',
+            'name'         => 'UHH, HLS, RLS, Pengeluaran Riil per Kapita, IPM Menurut Jenis Kelamin',
+            'variable_id'  => 702,
+            'unit'         => 'Beragam',
+            'tahun_mulai'  => 2014,
+            'tahun_akhir'  => 2024,
+            'insight_type' => 'default', // mixed indicators -> keep neutral
+            'category'     => 3,
+            'params'       => ['domain' => '3305'],
+        ],
 
     ]
 ];

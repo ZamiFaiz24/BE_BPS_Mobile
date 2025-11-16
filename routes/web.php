@@ -85,6 +85,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
         Route::get('logs', [SyncLogController::class, 'index'])->name('logs.index');
         Route::get('logs/{log}', [SyncLogController::class, 'show'])->name('logs.show');
+        Route::get('/sync/status/{log}', [SyncLogController::class, 'checkStatus'])->name('sync.status');
     });
 });
 

@@ -43,51 +43,48 @@
                         </div>
                     </div>
 
-                    {{-- Card 2: Total Baris Data (Hijau) --}}
+                    {{-- Card 2: Update Data (Pertumbuhan) --}}
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        {{-- Container Ikon Disederhanakan --}}
                         <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-green-600 text-white">
-                            {{-- Menggunakan warna Tailwind yg mirip #68B92E --}}
-                            <x-heroicon-o-document-text class="w-7 h-7" />
+                            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm text-gray-500">Total Baris Data</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ number_format($valueCount) }}</p>
-
-                            {{-- Server-side fallback: jika controller menyediakan jumlah yang ditambahkan saat sinkron terakhir --}}
-                            @if(isset($lastSyncAddedCount) && $lastSyncAddedCount)
-                                <p class="text-xs text-green-700 mt-1">+{{ number_format($lastSyncAddedCount) }} ditambahkan saat sinkron terakhir</p>
+                            <p class="text-sm text-gray-500">Update Data</p>
+                            @if(isset($lastSyncAddedCount) && $lastSyncAddedCount > 0)
+                                <p class="text-2xl font-bold text-green-600 flex items-center gap-1">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
+                                    </svg>
+                                    +{{ number_format($lastSyncAddedCount) }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">Total saat ini: {{ number_format($valueCount) }} baris</p>
+                            @else
+                                <p class="text-2xl font-bold text-gray-900">{{ number_format($valueCount) }}</p>
+                                <p class="text-xs text-gray-400 mt-1">Belum ada update terbaru</p>
                             @endif
-
-                            {{-- Element untuk update client-side (localStorage) --}}
-                            <div id="last-added-info" class="text-xs text-green-700 mt-1 hidden"></div>
                         </div>
                     </div>
 
                     {{-- Card 3: Sinkronisasi Terakhir + Tombol --}}
                     <div class="bg-white p-6 rounded-lg shadow-md flex items-start">
-                        {{-- Container Ikon Disederhanakan --}}
                         <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-600 text-white">
-                            {{-- Menggunakan warna Tailwind yg mirip #0093DD --}}
-                            {{-- Menggunakan ikon Heroicon 'cloud-arrow-down' agar konsisten --}}
                             <x-heroicon-o-cloud-arrow-down class="w-7 h-7" />
                         </div>
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Sinkronisasi Terakhir</p>
-                            {{-- Ukuran font dibuat 'xl' agar tidak terlalu mendominasi tombol --}}
                             <p class="text-xl font-bold text-gray-900">{{ $lastSync }}</p> 
                             <p class="text-xs text-gray-400 mt-1">Perbarui data jika ada perubahan dari sumber.</p>
                             
-                            {{-- Tampilkan hanya untuk Super Admin (izin view settings) --}}
                             @can('run sync')
-                                <form id="sync-form" method="POST" action="{{ route('admin.sync.manual') }}" class="mt-4 inline-flex">
-                                    @csrf
-                                    <button id="sync-btn" type="submit"
-                                        class="inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md font-semibold shadow-sm hover:bg-green-700 transition text-sm">
-                                        <x-heroicon-s-arrow-path class="w-5 h-5 mr-2" />
-                                        Sinkronisasi
-                                    </button>
-                                </form>
+                                {{-- GANTI FORM DENGAN BUTTON --}}
+                                <button id="sync-btn" type="button"
+                                    class="mt-4 inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md font-semibold shadow-sm hover:bg-green-700 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <x-heroicon-s-arrow-path class="w-5 h-5 mr-2" />
+                                    Sinkronisasi
+                                </button>
+                                <div id="sync-progress" class="mt-2 text-xs text-gray-600 hidden"></div>
                             @endcan
                         </div>
                     </div>
@@ -102,24 +99,73 @@
                                 <x-heroicon-o-adjustments-horizontal class="w-5 h-5 mr-2" />
                                 Filter
                             </button>
+                            
+                            {{-- Dropdown Sorting --}}
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" type="button"
+                                    class="inline-flex items-center px-4 py-2 rounded-full font-semibold shadow-sm text-white bg-green-600 border border-gray-300 hover:bg-green-800 transition">
+                                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                                    </svg>
+                                    Urutkan
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-cloak
+                                    class="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                    <div class="py-1">
+                                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Nama Dataset</div>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'dataset_name', 'order' => 'asc'])) }}" 
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            A ke Z
+                                        </a>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'dataset_name', 'order' => 'desc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Z ke A
+                                        </a>
+                                        
+                                        <div class="border-t border-gray-200 my-1"></div>
+                                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Subjek</div>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'subject', 'order' => 'asc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            A ke Z
+                                        </a>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'subject', 'order' => 'desc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Z ke A
+                                        </a>
+                                        
+                                        <div class="border-t border-gray-200 my-1"></div>
+                                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Terakhir Diperbarui</div>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'last_update', 'order' => 'desc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Terbaru Dahulu
+                                        </a>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'last_update', 'order' => 'asc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Terlama Dahulu
+                                        </a>
+                                        
+                                        <div class="border-t border-gray-200 my-1"></div>
+                                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Ditambahkan ke Sistem</div>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'created_at', 'order' => 'desc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Terbaru Dahulu
+                                        </a>
+                                        <a href="?{{ http_build_query(array_merge(request()->except(['sort', 'order']), ['sort' => 'created_at', 'order' => 'asc'])) }}"
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Terlama Dahulu
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
                             {{-- Tombol Reset --}}
-                            @if(request('category') || request('subject'))
+                            @if(request('category') || request('subject') || request('sort') || request('q'))
                                 <a href="{{ route('admin.dashboard') }}"
-                                    class="inline-flex items-center px-4 py-2 text-[#EB891C] border-2 border-[#EB891C] rounded-full bg-white font-semibold shadow-sm hover:bg-[#EB891C] hover:text-white transition">
+                                    class="inline-flex items-center px-4 py-2 text-white border-2 border-gray-300 rounded-full bg-[#EB891C] font-semibold shadow-sm hover:bg-[#EB891C] transition">
                                     <x-heroicon-o-x-mark class="w-5 h-5 mr-2" />
                                     Reset
                                 </a>
                             @endif
-
-                            {{-- Tambah Konten (shortcut dari dashboard) --}}
-                            <a href="{{ route('admin.contents.create') }}"
-                               class="inline-flex items-center px-4 py-2 bg-[#0093DD] hover:bg-[#0070C0] text-white rounded-full font-semibold shadow-sm transition">
-                                <!-- plus icon -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Tambah Konten
-                            </a>
                         </div>
                         {{-- Form Pencarian Sederhana --}}
                         <form method="GET" action="{{ route('admin.dashboard') }}" class="relative mt-4 md:mt-0">
@@ -320,74 +366,102 @@
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const syncBtn = document.getElementById('sync-btn');
-        const syncForm = document.getElementById('sync-form');
+        const syncNotif = document.getElementById('sync-notif');
+        const syncProgress = document.getElementById('sync-progress');
+        let pollInterval = null;
 
-        if (syncBtn && syncForm) {
+        if (syncBtn) {
             syncBtn.addEventListener('click', function (e) {
                 e.preventDefault();
-                syncBtn.innerHTML = '<span class="animate-spin mr-2">&#8635;</span> Sinkronisasi...';
+                
+                // Disable button
+                syncBtn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memulai...';
                 syncBtn.disabled = true;
 
+                // Trigger sync
                 fetch('{{ route('admin.sync.manual') }}', {
                     method: 'POST',
-                    headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
                 })
-                .then(response => response.json().catch(() => ({}))) // fallback jika bukan JSON
+                .then(response => response.json())
                 .then(data => {
-                    if (data.added_count !== undefined) {
-                        localStorage.setItem('lastAddedCount', data.added_count);
+                    if (data.success) {
+                        // Tampilkan notifikasi sukses trigger
+                        syncNotif.innerHTML = `
+                            <div class="mb-6 p-4 bg-blue-100 text-blue-800 border-l-4 border-blue-500 rounded-r-lg">
+                                ${data.message}
+                            </div>
+                        `;
+                        
+                        // Mulai polling status
+                        startPolling(data.log_id, data.check_url);
+                    } else {
+                        showError(data.message || 'Gagal memulai sinkronisasi');
                     }
-                    if (data.last_sync_time !== undefined) {
-                        localStorage.setItem('lastSyncTime', data.last_sync_time);
-                    }
-                    localStorage.setItem('syncSuccess', data.message || 'Sinkronisasi berhasil!');
-                    window.location.reload();
                 })
-                .catch(() => {
-                    localStorage.setItem('syncError', 'Gagal sinkronisasi!');
-                    window.location.reload();
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Terjadi kesalahan saat memulai sinkronisasi');
                 });
             });
         }
 
-        // Tampilkan notifikasi jika ada pesan sukses
-        if (localStorage.getItem('syncSuccess')) {
-            const notif = document.getElementById('sync-notif');
-            notif.innerHTML =
-                '<div id="notif-banner" class="mb-6 p-4 bg-green-100 text-green-800 border-l-4 border-green-500 rounded-r-lg transition-opacity duration-500">' +
-                localStorage.getItem('syncSuccess') +
-                '</div>';
-            localStorage.removeItem('syncSuccess');
+        function startPolling(logId, checkUrl) {
+            syncProgress.classList.remove('hidden');
+            syncProgress.textContent = 'Sinkronisasi sedang berjalan...';
 
-            // Jika ada lastAddedCount, tampilkan sementara di Card 2
-            const added = localStorage.getItem('lastAddedCount');
-            const lastSyncTime = localStorage.getItem('lastSyncTime');
-            if (added) {
-                const el = document.getElementById('last-added-info');
-                if (el) {
-                    // tampilkan format yang singkat
-                    el.textContent = `+${Number(added).toLocaleString()} ditambahkan${ lastSyncTime ? ' pada ' + lastSyncTime : ' saat sinkron terakhir' }`;
-                    el.classList.remove('hidden');
-                    // hapus setelah beberapa detik agar tidak permanen (server-side tetap menjadi sumber kebenaran)
-                    setTimeout(() => { el.classList.add('hidden'); el.textContent = ''; }, 8000);
-                }
-                // lalu hapus item agar tidak tampil next reload
-                localStorage.removeItem('lastAddedCount');
-                localStorage.removeItem('lastSyncTime');
-            }
+            pollInterval = setInterval(() => {
+                fetch(checkUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update progress
+                        syncProgress.textContent = `Progress: ${data.progress} dataset diproses...`;
 
-            // Hilangkan notifikasi setelah 4 detik
-            setTimeout(() => {
-                const banner = document.getElementById('notif-banner');
-                if (banner) {
-                    banner.style.opacity = 0;
-                    setTimeout(() => banner.remove(), 500);
-                }
-            }, 4000);
+                        // Jika selesai
+                        if (!data.is_running) {
+                            clearInterval(pollInterval);
+                            
+                            if (data.status === 'sukses') {
+                                syncNotif.innerHTML = `
+                                    <div class="mb-6 p-4 bg-green-100 text-green-800 border-l-4 border-green-500 rounded-r-lg">
+                                        ✅ ${data.summary_message}
+                                    </div>
+                                `;
+                                
+                                // Reload setelah 2 detik untuk update statistik
+                                setTimeout(() => window.location.reload(), 2000);
+                            } else {
+                                showError(data.summary_message || 'Sinkronisasi gagal');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Polling error:', error);
+                        clearInterval(pollInterval);
+                        showError('Gagal memeriksa status sinkronisasi');
+                    });
+            }, 3000); // Check every 3 seconds
         }
-        if (localStorage.getItem('syncError')) {
-            alert(localStorage.getItem('syncError'));
-            localStorage.removeItem('syncError');
+
+        function showError(message) {
+            // Reset button dengan SVG icon yang benar
+            syncBtn.innerHTML = '<svg class="w-5 h-5 mr-2 inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clip-rule="evenodd" /></svg> Sinkronisasi';
+            syncBtn.disabled = false;
+            syncProgress.classList.add('hidden');
+            
+            syncNotif.innerHTML = `
+                <div class="mb-6 p-4 bg-red-100 text-red-800 border-l-4 border-red-500 rounded-r-lg">
+                    ${message}
+                </div>
+            `;
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                syncNotif.innerHTML = '';
+            }, 5000);
         }
     });
     </script>
