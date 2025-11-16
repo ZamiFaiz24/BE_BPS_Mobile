@@ -40,6 +40,13 @@
                         <x-heroicon-o-cog-6-tooth class="w-5 h-5" />
                         {{ __('Pengaturan') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('admin.logs.index')" :active="request()->routeIs('admin.logs.*')"
+                        class="{{ $baseClass }} {{ request()->routeIs('admin.logs.*') ? $activeClass : $inactiveClass }}">
+                        <x-heroicon-o-document-text class="w-5 h-5" />
+                        Log Sinkronisasi
+                    </x-nav-link>
+                   
                     @endcan
                 </div>
 

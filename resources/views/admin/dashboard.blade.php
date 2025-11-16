@@ -78,17 +78,16 @@
                             <p class="text-xl font-bold text-gray-900">{{ $lastSync }}</p> 
                             <p class="text-xs text-gray-400 mt-1">Perbarui data jika ada perubahan dari sumber.</p>
                             
-                            {{-- 
-                            PERBAIKAN: Tombol ini sekarang dibungkus dengan @can,
-                            sehingga HANYA Super Admin (yang punya izin 'run sync') yang bisa melihatnya.
-                            --}}
+                            {{-- Tampilkan hanya untuk Super Admin (izin view settings) --}}
                             @can('run sync')
-                                <button id="sync-btn"
-                                    class="mt-4 inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md font-semibold shadow-sm hover:bg-green-700 transition text-sm">
-                                    {{-- Menggunakan ikon Heroicon 'arrow-path' (refresh) atau 'clock' (seperti di gambar) --}}
-                                    <x-heroicon-s-arrow-path class="w-5 h-5 mr-2" />
-                                    Sinkronisasi
-                                </button>
+                                <form id="sync-form" method="POST" action="{{ route('admin.sync.manual') }}" class="mt-4 inline-flex">
+                                    @csrf
+                                    <button id="sync-btn" type="submit"
+                                        class="inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md font-semibold shadow-sm hover:bg-green-700 transition text-sm">
+                                        <x-heroicon-s-arrow-path class="w-5 h-5 mr-2" />
+                                        Sinkronisasi
+                                    </button>
+                                </form>
                             @endcan
                         </div>
                     </div>
@@ -321,26 +320,26 @@
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const syncBtn = document.getElementById('sync-btn');
-        if (syncBtn) {
+        const syncForm = document.getElementById('sync-form');
+
+        if (syncBtn && syncForm) {
             syncBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 syncBtn.innerHTML = '<span class="animate-spin mr-2">&#8635;</span> Sinkronisasi...';
                 syncBtn.disabled = true;
 
-                fetch('{{ route('admin.sync.all') }}', {
+                fetch('{{ route('admin.sync.manual') }}', {
                     method: 'POST',
                     headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
                 })
-                .then(response => response.json())
-                .then data => {
-                    // Jika backend mengembalikan jumlah yang ditambahkan, simpan ke localStorage
+                .then(response => response.json().catch(() => ({}))) // fallback jika bukan JSON
+                .then(data => {
                     if (data.added_count !== undefined) {
                         localStorage.setItem('lastAddedCount', data.added_count);
                     }
                     if (data.last_sync_time !== undefined) {
                         localStorage.setItem('lastSyncTime', data.last_sync_time);
                     }
-                    // Simpan pesan sukses juga
                     localStorage.setItem('syncSuccess', data.message || 'Sinkronisasi berhasil!');
                     window.location.reload();
                 })
