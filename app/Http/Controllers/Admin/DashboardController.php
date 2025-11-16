@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BpsDataset;
 use App\Models\BpsDatavalue;
-use App\Jobs\SyncBpsDataJob;
+use App\Models\SyncLog;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Artisan;
 
 class DashboardController extends Controller
 {
@@ -30,8 +34,16 @@ class DashboardController extends Controller
 
         $datasetCount = \App\Models\BpsDataset::count();
         $valueCount = \App\Models\BpsDatavalue::count();
-        $lastValue = \App\Models\BpsDatavalue::latest('updated_at')->first();
-        $lastSync = $lastValue ? $lastValue->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum pernah';
+
+        // -----------------------------------------------------------
+        // PERBAIKAN: Ambil $lastSync dari tabel log baru kita
+        // -----------------------------------------------------------
+        $latestLog = SyncLog::where('status', 'sukses')
+            ->latest('finished_at')
+            ->first();
+
+        $lastSync = $latestLog ? $latestLog->finished_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum pernah';
+        // -----------------------------------------------------------
 
         $categories = \App\Models\BpsDataset::select('category', 'subject')
             ->whereNotNull('category')->get()
@@ -48,7 +60,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'datasetCount' => $datasetCount,
             'valueCount' => $valueCount,
-            'lastSync' => $lastSync,
+            'lastSync' => $lastSync, // Variabel ini sekarang jauh lebih akurat
             'datasets' => $datasets,
             'categories' => $categories,
         ]);
@@ -103,34 +115,40 @@ class DashboardController extends Controller
         return redirect()->route('admin.dashboard')->with('status', 'Semua perubahan tipe insight berhasil disimpan.');
     }
 
+    /**
+     * PERBAIKAN: Method ini sekarang menjadi "tipis" dan memanggil
+     * "otak" yang sama dengan SyncController (yaitu 'bps:fetch-data').
+     */
     public function syncAllDatasets()
     {
-        // 1. Baca daftar target dari file konfigurasi
-        $targets = config('bps_targets.datasets');
-
-        if (empty($targets)) {
-            return redirect()->back()->with('error', 'Tidak ada target dataset untuk disinkronkan.');
+        // 1. Kunci agar tidak di-klik ganda
+        $lock = Cache::lock('sync:manual', 10);
+        if (!$lock->get()) {
+            return redirect()->back()->withErrors(['status' => 'Sinkronisasi baru saja dipicu. Coba lagi nanti.']);
         }
 
-        // 2. Looping untuk setiap target dan KIRIM TUGAS KE ANTRIAN
-        foreach ($targets as $target) {
-            SyncBpsDataJob::dispatch(
-                $target['params']['domain'],
-                $target['variable_id'],
-                $target['tahun_mulai'],
-                $target['tahun_akhir'],
-                $target['name'],
-                $target['category']
-            );
-        }
+        try {
+            // 2. Dapatkan ID user yang sedang login
+            $userId = Auth::id();
+            Log::info("Sync All triggered by User ID: $userId");
 
-        // 3. Langsung berikan respon ke user, jangan menunggu proses selesai
-        return response()->json(['status' => 'ok', 'message' => 'Sinkronisasi berhasil!']);
+            // 3. Masukkan "Otak" kita (Command) ke dalam Antrean (Queue)
+            Artisan::queue('bps:fetch-data', [
+                '--user_id' => $userId
+            ])->onQueue('sync-jobs');
+
+            // 4. Kembalikan respons sukses
+            return redirect()->back()->with('status', 'Sinkronisasi semua dataset telah dimasukkan ke antrean.');
+        } catch (\Exception $e) {
+            Log::error('Gagal memicu Sync All: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['sync_error' => 'Gagal memicu sinkronisasi: ' . $e->getMessage()]);
+        }
     }
+
+    // --- Sisa method Anda (show, destroy, edit, update) sudah benar ---
 
     public function show(BpsDataset $dataset)
     {
-
         $values = $dataset->values()->orderBy('year', 'desc')->get();
 
         return view('admin.datasets.show', [
@@ -138,12 +156,14 @@ class DashboardController extends Controller
             'values' => $values,
         ]);
     }
+
     public function destroy(BpsDataset $dataset)
     {
         $dataset->delete();
 
         return redirect()->route('admin.dashboard')->with('status', 'Dataset berhasil dihapus.');
     }
+
     public function edit(BpsDataset $dataset)
     {
         return view('admin.datasets.edit', compact('dataset'));
@@ -160,6 +180,7 @@ class DashboardController extends Controller
         ]);
         return redirect()->route('admin.dashboard')->with('status', 'Tipe insight berhasil diubah.');
     }
+
     public function ajaxSearch(Request $request)
     {
         $query = BpsDataset::query();
@@ -173,7 +194,6 @@ class DashboardController extends Controller
         $perPage = $request->get('per_page', 10);
         $datasets = $query->orderBy('dataset_name')->paginate($perPage);
 
-        // Return partial blade (hanya tbody dan pagination)
         return view('admin.datasets.partials.table', compact('datasets'))->render();
     }
 }

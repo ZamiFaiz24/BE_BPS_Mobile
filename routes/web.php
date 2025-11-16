@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DashboardContentController;
 use App\Http\Controllers\Admin\SyncController;
 use App\Http\Controllers\Admin\SettingController;
-use App\Http\Controllers\API\BpsSyncController;
+use App\Http\Controllers\Admin\SyncLogController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
@@ -83,8 +83,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
         Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
 
-        Route::get('logs', [BpsSyncController::class, 'index'])->name('logs.index');
-        Route::get('logs/{log}', [BpsSyncController::class, 'show'])->name('logs.show');
+        Route::get('logs', [SyncLogController::class, 'index'])->name('logs.index');
+        Route::get('logs/{log}', [SyncLogController::class, 'show'])->name('logs.show');
     });
 });
 
