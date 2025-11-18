@@ -101,8 +101,11 @@ class DashboardController extends Controller
         if ($request->filled('q')) {
             $query->where('dataset_name', 'like', '%' . $request->q . '%');
         }
+        $perPage = $request->input('per_page', 10);
 
-        return $query->orderBy('dataset_name')->paginate(10)->withQueryString();
+        return $query->orderBy('dataset_name')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function updateInsightType(Request $request, BpsDataset $dataset)

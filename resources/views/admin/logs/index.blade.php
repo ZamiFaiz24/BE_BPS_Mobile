@@ -12,17 +12,17 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-[#0093DD]/20">
+                        <thead style="background-color: #0093DD;">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ringkasan</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dijalankan Oleh</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Selesai</th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Ringkasan</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Dijalankan Oleh</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Waktu Selesai</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white divide-y divide-[#0093DD]/10">
                             @forelse ($logs as $log)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -49,8 +49,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ $log->finished_at ? \Carbon\Carbon::parse($log->finished_at)->format('d M Y, H:i:s') : '-' }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{{ route('admin.logs.show', $log->id) }}" class="text-[#0093DD] hover:text-[#0070AA]">Lihat Detail</a>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                        <a href="{{ route('admin.logs.show', $log->id) }}" class="inline-flex items-center px-3 py-1.5 rounded-md border border-[#0093DD] text-[#0093DD] bg-white hover:bg-[#0093DD] hover:text-white transition font-semibold text-xs">
+                                            <x-heroicon-o-eye class="w-5 h-5 mr-1" />
+                                            Lihat Detail
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
@@ -66,7 +69,7 @@
 
                 @if ($logs->hasPages())
                     <div class="p-4 border-t">
-                        {{ $logs->links() }}
+                        {{ $logs->links('vendor.pagination.tailwind') }}
                     </div>
                 @endif
             </div>

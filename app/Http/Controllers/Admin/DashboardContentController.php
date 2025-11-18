@@ -91,10 +91,11 @@ class DashboardContentController extends Controller
             $query->where('category', 'like', '%' . $request->category . '%');
         }
 
-        // Paginate dengan query string
+        $perPage = $request->input('per_page', 10);
+        
         $contents = $query
             ->orderByDesc('publish_date')
-            ->paginate(15)
+            ->paginate($perPage)
             ->appends($request->all());
 
         return view('admin.contents.index', compact('contents'));

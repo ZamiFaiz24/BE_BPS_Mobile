@@ -168,126 +168,16 @@
 
                     {{-- Tabel untuk menampilkan data --}}
                     <div id="content-container">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-[#0093DD]/20">
-                                <thead style="background-color: #0093DD;">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Judul</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Tipe</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Kategori</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Tanggal</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Gambar</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-[#0093DD]/10">
-                                    @php
-                                        // Fallback sorting on current page (controller orderBy is recommended for global ordering)
-                                        $items = $contents->getCollection();
-                                        $items = $items->sortByDesc(function($c) {
-                                            try { return $c->publish_date ? \Carbon\Carbon::parse($c->publish_date)->timestamp : 0; }
-                                            catch (\Exception $e) { return 0; }
-                                        });
-                                        if (request('sort') === 'publish_date_asc') {
-                                            $items = $items->reverse();
-                                        }
-                                    @endphp
-
-                                    @forelse ($items as $content)
-                                        <tr>
-                                            <td class="px-6 py-4">
-                                                <div class="text-sm font-medium text-gray-900">{{ Str::limit($content->title, 60) }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                                @php
-                                                    $typeConfig = match($content->type) {
-                                                        'news' => ['label' => 'Berita', 'class' => 'bg-[#0093DD] bg-opacity-10 text-[#0093DD]'],
-                                                        'press_release' => ['label' => 'Siaran Pers', 'class' => 'bg-[#68B92E] bg-opacity-10 text-[#68B92E]'],
-                                                        'publication' => ['label' => 'Publikasi', 'class' => 'bg-[#EB891C] bg-opacity-10 text-[#EB891C]'],
-                                                        'infographic' => ['label' => 'Infografik', 'class' => 'bg-purple-100 text-purple-800'],
-                                                        default => ['label' => 'Lainnya', 'class' => 'bg-gray-100 text-gray-800']
-                                                    };
-                                                @endphp
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $typeConfig['class'] }}">
-                                                    {{ $typeConfig['label'] }}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                {{ $content->category ?? '-' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                @php
-                                                    try {
-                                                        if ($content->publish_date) {
-                                                            // Coba parse tanggal
-                                                            $date = \Carbon\Carbon::parse($content->publish_date);
-                                                            echo $date->translatedFormat('d M Y');
-                                                        } else {
-                                                            echo '-';
-                                                        }
-                                                    } catch (\Exception $e) {
-                                                        // Jika gagal, tampilkan apa adanya
-                                                        echo $content->publish_date ?? '-';
-                                                    }
-                                                @endphp
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                                @if ($content->image_url)
-                                                    <img src="{{ $content->image_url }}" alt="thumb" class="h-10 w-16 object-cover rounded border border-[#0093DD]/30 mx-auto">
-                                                @else
-                                                    <span class="text-gray-400 text-xs">N/A</span>
-                                                @endif
-                                            </td>
-
-                                            {{-- AKSI: ikon saja --}}
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                <div class="flex items-center justify-center gap-2">
-                                                    @if($content->link)
-                                                        <a href="{{ $content->link }}" target="_blank"
-                                                           class="text-[#0093DD] hover:text-[#68B92E] inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-50 transition"
-                                                           title="Lihat" aria-label="Lihat">
-                                                            <!-- Ganti ke ikon 'open in new' -->
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                                 viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                            </svg>
-                                                        </a>
-                                                    @endif
-                                                    <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <input type="hidden" name="type" value="{{ $content->type }}">
-                                                        <button type="submit"
-                                                                class="text-[#EB891C] hover:text-red-700 inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-50 transition"
-                                                                title="Hapus" aria-label="Hapus">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                                 viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                      d="M6 7h12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m1 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7m3 4v6m4-6v6"/>
-                                                            </svg>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                                Belum ada data konten.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+    
+                        {{-- 1. Panggil Tabel (Cukup satu baris ini saja) --}}
+                        <div class="mt-4 overflow-x-auto">
+                            @include('admin.contents.partials.table', ['contents' => $contents])
                         </div>
 
-                        {{-- Pagination --}}
-                        <div class="mt-4">
-                            {{ $contents->appends(request()->query())->links() }}
-                        </div>
+                        {{-- 2. Panggil Pagination --}}
+                        @include('admin.contents.partials.pagination', ['contents' => $contents])
+
                     </div>
-
                 </div>
             </div>
         </div>

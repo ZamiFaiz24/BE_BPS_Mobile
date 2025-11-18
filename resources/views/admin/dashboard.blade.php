@@ -216,11 +216,11 @@
                     {{-- PANGGIL KOMPONEN MODAL DI SINI --}}
                     <x-modal-filter :categories="$categories" />
 
-                    {{-- 2. KONTEN DINAMIS --}}
-                    <div id="dataset-container">
-                        @include('admin.datasets.partials.table-and-pagination', ['datasets' => $datasets])
+                    <div class="mt-4 overflow-x-auto">
+                    @include('admin.datasets.partials.table', ['datasets' => $datasets])
                     </div>
 
+                    @include('admin.datasets.partials.pagination', ['datasets' => $datasets])
                 </div>
             </div>
         </div>

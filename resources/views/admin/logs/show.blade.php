@@ -57,7 +57,7 @@
                             <dt class="text-gray-500 font-medium">Pesan Ringkasan</dt>
                             <dd class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md">
                                 {{ $log->summary_message ?? '-' }}
-                            </note>
+                            </dd>
                         </div>
                     </div>
                 </div>
@@ -68,15 +68,15 @@
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Rincian Proses ({{ $log->details->count() }} item)</h3>
                     <div class="overflow-x-auto border rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                        <table class="min-w-full divide-y divide-[#0093DD]/20">
+                            <thead style="background-color: #0093DD;">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Dataset</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pesan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Judul Dataset</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Tindakan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Pesan</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-white divide-y divide-[#0093DD]/10">
                                 @forelse ($log->details as $detail)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

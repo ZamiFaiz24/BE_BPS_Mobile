@@ -1,8 +1,8 @@
 {{-- resources/views/admin/datasets/partials/table-and-pagination.blade.php --}}
 
-<div class="overflow-x-auto">
+{{-- <div class="overflow-x-auto">
     @include('admin.datasets.partials.table', ['datasets' => $datasets])
-</div>
+</div> --}}
 
 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
