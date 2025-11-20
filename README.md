@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Backend API BPS Kebumen Mobile</h1>
 <p align="left">
-  Repositori backend (API) pendukung aplikasi Android BPS Kabupaten Kebumen.  
+  Repositori backend (API) pendukung aplikasi SILAWET BPS Kabupaten Kebumen.  
   Dibangun menggunakan <strong>Laravel</strong> untuk menyediakan data statistik yang relevan, akurat, dan mudah diakses.
 </p>
 
@@ -15,7 +15,7 @@ Backend ini bertugas untuk:
 
 - 🔄 **Sinkronisasi Data:** Mengambil data secara periodik dari API BPS.  
 - 🗄️ **Penyimpanan Data:** Menyimpan data statistik dalam database lokal agar lebih cepat diakses.  
-- 📊 **Penyajian Data:** Menyediakan data yang sudah bersih dan terstruktur melalui RESTful API untuk aplikasi Android.
+- 📊 **Penyajian Data:** Menyediakan data yang sudah bersih dan terstruktur melalui REST API untuk aplikasi Client Android.
 
 ---
 
@@ -41,8 +41,9 @@ Backend ini bertugas untuk:
 
 | Komponen | Teknologi |
 |-----------|------------|
-| Framework | Laravel |
-| Bahasa | PHP |
+| Framework | Laravel    |
+| CSS       | Tailwind   |
+| Bahasa    | PHP        | 
 | Database | MySQL / MariaDB |
 | Sistem Antrian | Database Queue (atau Redis untuk produksi) |
 
@@ -131,4 +132,4 @@ Dengan demikian, sistem ini telah mampu:
 - Menyimpan hasilnya ke dalam database lokal, dan  
 - Menyajikan data terstruktur untuk aplikasi mobile.
 
-Sistem siap digunakan untuk tahap **pengujian** dan **pengembangan lanjutan**. 🎓
+Sistem siap digunakan untuk tahap **pengujian** dan **pengembangan lanjutan**.
