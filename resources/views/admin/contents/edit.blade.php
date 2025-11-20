@@ -147,6 +147,12 @@
                                class="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </a>
+
+                            <button type="button"
+                                onclick="window.history.back()"
+                                class="px-6 py-2 bg-gray-100 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-200 transition">
+                                Kembali ke Sebelumnya
+                            </button>
                         </div>
 
                     </form>
