@@ -17,54 +17,11 @@ class DashboardContentController extends Controller
      */
     public function index(Request $request)
     {
-        // Query gabungan dari 4 tabel
-        $newsQuery = DB::table('news')
-            ->select(
-                'id',
-                'title',
-                DB::raw("'news' as type"),
-                'date as publish_date',
-                'category',
-                'thumbnail_url as image_url',
-                'link',
-                'created_at'
-            );
-
-        $pressQuery = DB::table('press_releases')
-            ->select(
-                'id',
-                'title',
-                DB::raw("'press_release' as type"),
-                'date as publish_date',
-                'category',
-                'thumbnail_url as image_url',
-                'link',
-                'created_at'
-            );
-
-        $publicationQuery = DB::table('publications')
-            ->select(
-                'id',
-                'title',
-                DB::raw("'publication' as type"),
-                'release_date as publish_date',
-                'category',
-                'cover_url as image_url',
-                'link',
-                'created_at'
-            );
-
-        $infographicQuery = DB::table('infographics')
-            ->select(
-                'id',
-                'title',
-                DB::raw("'infographic' as type"),
-                'date as publish_date',
-                'category',
-                'image_url',
-                DB::raw("NULL as link"),
-                'created_at'
-            );
+        // --- 1. QUERY UNION (GABUNGAN 4 TABEL) ---
+        $newsQuery = DB::table('news')->select('id', 'title', DB::raw("'news' as type"), 'date as publish_date', 'category', 'thumbnail_url as image_url', 'link', 'created_at');
+        $pressQuery = DB::table('press_releases')->select('id', 'title', DB::raw("'press_release' as type"), 'date as publish_date', 'category', 'thumbnail_url as image_url', 'link', 'created_at');
+        $publicationQuery = DB::table('publications')->select('id', 'title', DB::raw("'publication' as type"), 'release_date as publish_date', 'category', 'cover_url as image_url', 'link', 'created_at');
+        $infographicQuery = DB::table('infographics')->select('id', 'title', DB::raw("'infographic' as type"), 'date as publish_date', 'category', 'image_url', DB::raw("NULL as link"), 'created_at');
 
         // Union semua query
         $unionQuery = $newsQuery
@@ -72,9 +29,11 @@ class DashboardContentController extends Controller
             ->unionAll($publicationQuery)
             ->unionAll($infographicQuery);
 
-        // Wrap dalam subquery untuk filter dan sort
+        // Wrap dalam subquery agar bisa difilter & sort
         $query = DB::table(DB::raw("({$unionQuery->toSql()}) as contents"))
             ->mergeBindings($unionQuery);
+
+        // --- 2. FILTERING ---
 
         // Filter by type
         if ($request->filled('type')) {
@@ -91,14 +50,35 @@ class DashboardContentController extends Controller
             $query->where('category', 'like', '%' . $request->category . '%');
         }
 
+        // --- 3. SORTING DINAMIS (PERBAIKAN UTAMA) ---
+
+        // Ambil input sort dari dropdown (default: publish_date_desc)
+        $sort = $request->input('sort', 'publish_date_desc');
+
+        // Terapkan logika sorting
+        if ($sort == 'publish_date_asc') {
+            $query->orderBy('publish_date', 'asc'); // Terlama
+        } else {
+            $query->orderBy('publish_date', 'desc'); // Terbaru
+        }
+
+        // --- 4. PAGINATION ---
         $perPage = $request->input('per_page', 10);
-        
+
         $contents = $query
-            ->orderByDesc('publish_date')
             ->paginate($perPage)
             ->appends($request->all());
 
-        return view('admin.contents.index', compact('contents'));
+        // --- 5. DATA TAMBAHAN (OPSIONAL: UNTUK KARTU STATISTIK) ---
+        // Agar kartu di atas tabel menampilkan jumlah yang benar
+        $typeCounts = [
+            'news' => \App\Models\News::count(),
+            'press_release' => \App\Models\PressRelease::count(),
+            'publication' => \App\Models\Publication::count(),
+            'infographic' => \App\Models\Infographic::count(),
+        ];
+
+        return view('admin.contents.index', compact('contents', 'typeCounts'));
     }
 
     /**
@@ -363,8 +343,7 @@ class DashboardContentController extends Controller
                         'date' => $request->publish_date,
                         'image_url' => $request->image_url,
                         'description' => $request->description, // Mapping: description -> description
-                        // Infographic biasanya link-nya opsional atau null, tapi jika ada kolomnya di DB, simpan saja:
-                        // 'link' => $request->link 
+                        'link' => $request->link 
                     ]);
                     break;
             }
