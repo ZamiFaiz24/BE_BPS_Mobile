@@ -1,156 +1,127 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
-            {{ __('Manajemen Konten') }}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Tambah Konten Baru') }}
         </h2>
     </x-slot>
 
-    <div class="max-w-xl mx-auto mt-8">
-	{{-- Wrapper card mirip halaman settings --}}
-	<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-		<h2 class="text-2xl font-bold mb-4 text-[#0093DD]">Tambah Konten Baru</h2>
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            {{-- Wrapper Card --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
 
-		{{-- Errors --}}
-		@if ($errors->any())
-            <div class="bg-[#EB891C]/10 border border-[#EB891C] text-[#EB891C] px-4 py-3 rounded-lg mb-4" role="alert">
-                <strong class="font-bold">Oops!</strong>
-                <span class="block sm:inline">Ada beberapa masalah dengan input Anda.</span>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+                    {{-- Error Validation --}}
+                    @if ($errors->any())
+                        <div class="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative">
+                            <strong class="font-bold">Oops! Ada kesalahan input:</strong>
+                            <ul class="mt-1 list-disc list-inside text-sm">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    {{-- 
+                        x-data: Menginisialisasi state Alpine.js. 
+                        Kita pantau 'type' agar bisa show/hide input tertentu.
+                    --}}
+                    <form action="{{ route('admin.contents.store') }}" method="POST" enctype="multipart/form-data" 
+                          x-data="{ type: '{{ old('type', '') }}' }">
+                        @csrf
+
+                        {{-- 1. PILIH TIPE KONTEN (Wajib) --}}
+                        <div class="mb-6 border-b pb-6">
+                            <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Tipe Konten <span class="text-red-500">*</span></label>
+                            <select name="type" id="type" x-model="type" required
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD] transition">
+                                <option value="" disabled>-- Pilih Tipe Konten --</option>
+                                <option value="news" {{ old('type') == 'news' ? 'selected' : '' }}>Berita</option>
+                                <option value="press_release" {{ old('type') == 'press_release' ? 'selected' : '' }}>Siaran Pers</option>
+                                <option value="publication" {{ old('type') == 'publication' ? 'selected' : '' }}>Publikasi</option>
+                                <option value="infographic" {{ old('type') == 'infographic' ? 'selected' : '' }}>Infografik</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Pilih tipe konten terlebih dahulu untuk mengisi detail.</p>
+                        </div>
+
+                        {{-- 
+                            WRAPPER INPUT DINAMIS 
+                            Hanya muncul jika type sudah dipilih
+                        --}}
+                        <div x-show="type !== ''" x-transition x-cloak class="space-y-4">
+                            
+                            {{-- Judul --}}
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Judul <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" id="title" value="{{ old('title') }}" 
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                            </div>
+
+                            {{-- Kategori --}}
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                                <input type="text" name="category" id="category" value="{{ old('category') }}" placeholder="Contoh: Ekonomi, Sosial..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                            </div>
+
+                            {{-- Tanggal Publish (Mapping ke 'date' atau 'release_date') --}}
+                            <div>
+                                <label for="publish_date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Publish / Rilis</label>
+                                <input type="date" name="publish_date" id="publish_date" value="{{ old('publish_date') }}" 
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                            </div>
+
+                            {{-- Link Eksternal / PDF --}}
+                            <div>
+                                <label for="link" class="block text-sm font-medium text-gray-700 mb-1">
+                                    <span x-text="type === 'press_release' ? 'Link PDF / Detail' : 'Link Website / Sumber'"></span>
+                                </label>
+                                <input type="url" name="link" id="link" value="{{ old('link') }}" placeholder="https://..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                            </div>
+
+                            {{-- Image URL --}}
+                            <div>
+                                <label for="image_url" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar / Cover / Thumbnail</label>
+                                <input type="text" name="image_url" id="image_url" value="{{ old('image_url') }}" placeholder="https://..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                                <p class="text-xs text-gray-500 mt-1">Masukkan link gambar langsung.</p>
+                            </div>
+
+                            {{-- 
+                                KONDISIONAL: Abstraksi (Hanya untuk Publikasi) 
+                            --}}
+                            <div x-show="type === 'publication'">
+                                <label for="abstract" class="block text-sm font-medium text-gray-700 mb-1">Abstraksi</label>
+                                <textarea name="abstract" id="abstract" rows="4" placeholder="Ringkasan publikasi..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">{{ old('abstract') }}</textarea>
+                            </div>
+
+                            {{-- 
+                                KONDISIONAL: Deskripsi (Untuk Berita, Siaran Pers, Infografik) 
+                            --}}
+                            <div x-show="type !== 'publication'">
+                                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Isi Konten / Deskripsi</label>
+                                <textarea name="description" id="description" rows="6" placeholder="Isi konten lengkap..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">{{ old('description') }}</textarea>
+                            </div>
+
+                            {{-- Tombol Simpan --}}
+                            <div class="flex items-center gap-4 pt-4">
+                                <button type="submit" class="px-6 py-2 bg-[#0093DD] hover:bg-[#0070C0] text-white font-semibold rounded-lg shadow-sm transition">
+                                    Simpan Konten
+                                </button>
+                                <a href="{{ route('admin.contents.index') }}" class="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+                                    Batal
+                                </a>
+                            </div>
+
+                        </div>
+                    </form>
+
+                </div>
             </div>
-        @endif
-
-		<form action="{{ route('admin.contents.store') }}" method="POST" enctype="multipart/form-data" x-data="{ type: '{{ old('type', '') }}', uploadMethod: '{{ old('upload_method', 'url') }}' }">
-			@csrf
-
-			{{-- General info (card) --}}
-			<div class="mb-6">
-				<div class="mb-3">
-					<label class="block text-sm font-medium text-gray-700 mb-1">Tipe Konten <span class="text-red-500">*</span></label>
-					<select name="type" id="type" x-model="type"
-						class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#0093DD]">
-						<option value="">-- Pilih Tipe --</option>
-						<option value="news" {{ old('type') == 'news' ? 'selected' : '' }}>Berita</option>
-						<option value="press_release" {{ old('type') == 'press_release' ? 'selected' : '' }}>Siaran Pers</option>
-						<option value="publication" {{ old('type') == 'publication' ? 'selected' : '' }}>Publikasi</option>
-						<option value="infographic" {{ old('type') == 'infographic' ? 'selected' : '' }}>Infografik</option>
-					</select>
-				</div>
-
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Judul <span class="text-red-500">*</span></label>
-					<input type="text" name="title" value="{{ old('title') }}"
-						class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#0093DD]" required>
-				</div>
-			</div>
-
-			{{-- Separator + Type-specific cards --}}
-			<div class="space-y-4">
-
-				{{-- NEWS --}}
-				<div x-show="type === 'news'" x-cloak class="bg-gray-50 rounded-md p-4 border border-gray-100">
-					<p class="text-sm font-medium text-gray-700 mb-3">Berita</p>
-					<div class="grid grid-cols-1 gap-3">
-						<input-group label="Tanggal" type="date" name="date" value="{{ old('date') }}"></input-group>
-						<label class="text-sm text-gray-600">Kategori</label>
-						<input type="text" name="category" value="{{ old('category') }}" class="w-full border rounded px-3 py-2">
-						<label class="text-sm text-gray-600">Abstrak</label>
-						<textarea name="abstract" rows="3" class="w-full border rounded px-3 py-2">{{ old('abstract') }}</textarea>
-
-						<label class="text-sm text-gray-600">Thumbnail (URL atau upload)</label>
-						<div class="flex gap-2">
-							<input type="text" name="thumbnail" placeholder="URL thumbnail..." value="{{ old('thumbnail') }}" class="flex-1 border rounded px-3 py-2">
-							<div class="w-48">
-								<label for="thumbnail_file" class="cursor-pointer inline-flex items-center justify-center w-full px-3 py-2 border border-gray-300 bg-white rounded-md text-sm">
-									Browse...
-								</label>
-								<input id="thumbnail_file" type="file" name="thumbnail_file" class="hidden"
-									onchange="document.getElementById('thumb_name').textContent = this.files[0] ? this.files[0].name : 'No file selected.'">
-								<div id="thumb_name" class="text-xs text-gray-500 mt-1 truncate">No file selected.</div>
-							</div>
-						</div>
-
-						<label class="text-sm text-gray-600">Link (sumber)</label>
-						<input type="url" name="link" value="{{ old('link') }}" class="w-full border rounded px-3 py-2" required>
-
-						<label class="text-sm text-gray-600">Isi (HTML)</label>
-						<textarea name="content_html" rows="5" class="w-full border rounded px-3 py-2">{{ old('content_html') }}</textarea>
-					</div>
-				</div>
-
-				{{-- PRESS RELEASE --}}
-				<div x-show="type === 'press_release'" x-cloak class="bg-gray-50 rounded-md p-4 border border-gray-100">
-					<p class="text-sm font-medium text-gray-700 mb-3">Siaran Pers</p>
-					<div class="grid grid-cols-1 gap-3">
-						<input type="date" name="date" value="{{ old('date') }}" class="w-full border rounded px-3 py-2">
-						<textarea name="abstract" rows="3" class="w-full border rounded px-3 py-2" placeholder="Abstrak...">{{ old('abstract') }}</textarea>
-
-						<label class="text-sm text-gray-600">Thumbnail</label>
-						<div class="flex gap-2">
-							<input type="text" name="thumbnail" value="{{ old('thumbnail') }}" class="flex-1 border rounded px-3 py-2" placeholder="URL thumbnail...">
-							<input id="pr_thumb_file" type="file" name="thumbnail_file" class="hidden" onchange="document.getElementById('pr_thumb_name').textContent = this.files[0] ? this.files[0].name : 'No file selected.'">
-							<label for="pr_thumb_file" class="cursor-pointer inline-flex items-center justify-center px-3 py-2 border border-gray-300 bg-white rounded-md text-sm">Browse...</label>
-							<div id="pr_thumb_name" class="text-xs text-gray-500 mt-1 truncate">No file selected.</div>
-						</div>
-
-						<label class="text-sm text-gray-600">PDF (URL)</label>
-						<input type="text" name="pdf" value="{{ old('pdf') }}" class="w-full border rounded px-3 py-2">
-						<input id="pr_pdf_file" type="file" name="pdf_file" class="hidden" onchange="document.getElementById('pr_pdf_name').textContent = this.files[0] ? this.files[0].name : 'No file selected.'">
-						<label for="pr_pdf_file" class="cursor-pointer inline-flex items-center mt-1 px-3 py-2 border border-gray-300 bg-white rounded-md text-sm">Upload PDF</label>
-						<div id="pr_pdf_name" class="text-xs text-gray-500 mt-1 truncate">No file selected.</div>
-
-						<input type="text" name="category" value="{{ old('category') }}" class="w-full border rounded px-3 py-2" placeholder="Kategori...">
-						<input type="url" name="link" value="{{ old('link') }}" class="w-full border rounded px-3 py-2" placeholder="Link unik..." required>
-						<textarea name="content_html" rows="5" class="w-full border rounded px-3 py-2">{{ old('content_html') }}</textarea>
-					</div>
-				</div>
-
-				{{-- PUBLICATION --}}
-				<div x-show="type === 'publication'" x-cloak class="bg-gray-50 rounded-md p-4 border border-gray-100">
-					<p class="text-sm font-medium text-gray-700 mb-3">Publikasi</p>
-					<div class="grid grid-cols-1 gap-3">
-						<input type="date" name="date" value="{{ old('date') }}" class="w-full border rounded px-3 py-2">
-						<input type="text" name="subject" value="{{ old('subject') }}" class="w-full border rounded px-3 py-2" placeholder="Subject / Kategori">
-						<div class="flex gap-2">
-							<input type="text" name="cover" value="{{ old('cover') }}" class="flex-1 border rounded px-3 py-2" placeholder="Cover URL...">
-							<input id="pub_cover_file" type="file" name="cover_file" class="hidden" onchange="document.getElementById('pub_cover_name').textContent = this.files[0] ? this.files[0].name : 'No file selected.'">
-							<label for="pub_cover_file" class="cursor-pointer inline-flex items-center justify-center px-3 py-2 border border-gray-300 bg-white rounded-md text-sm">Browse...</label>
-						</div>
-						<div id="pub_cover_name" class="text-xs text-gray-500 mt-1 truncate">No file selected.</div>
-						<input type="text" name="pdf" value="{{ old('pdf') }}" class="w-full border rounded px-3 py-2" placeholder="PDF URL...">
-						<input type="url" name="link" value="{{ old('link') }}" class="w-full border rounded px-3 py-2" placeholder="Link unik..." required>
-						<textarea name="abstract" rows="4" class="w-full border rounded px-3 py-2">{{ old('abstract') }}</textarea>
-					</div>
-				</div>
-
-				{{-- INFOGRAPHIC --}}
-				<div x-show="type === 'infographic'" x-cloak class="bg-gray-50 rounded-md p-4 border border-gray-100">
-					<p class="text-sm font-medium text-gray-700 mb-3">Infografik</p>
-					<div class="grid grid-cols-1 gap-3">
-						<input type="date" name="date" value="{{ old('date') }}" class="w-full border rounded px-3 py-2">
-						<input type="text" name="category" value="{{ old('category') }}" class="w-full border rounded px-3 py-2" placeholder="Kategori...">
-						<div class="flex gap-2">
-							<input type="text" name="infographic" value="{{ old('infographic') }}" class="flex-1 border rounded px-3 py-2" placeholder="Image URL...">
-							<input id="inf_file" type="file" name="infographic_file" class="hidden" onchange="document.getElementById('inf_name').textContent = this.files[0] ? this.files[0].name : 'No file selected.'">
-							<label for="inf_file" class="cursor-pointer inline-flex items-center justify-center px-3 py-2 border border-gray-300 bg-white rounded-md text-sm">Browse...</label>
-						</div>
-						<div id="inf_name" class="text-xs text-gray-500 mt-1 truncate">No file selected.</div>
-						<textarea name="description" rows="3" class="w-full border rounded px-3 py-2">{{ old('description') }}</textarea>
-						<input type="url" name="link" value="{{ old('link') }}" class="w-full border rounded px-3 py-2" placeholder="Link unik..." required>
-					</div>
-				</div>
-
-			</div>
-
-			{{-- Actions --}}
-			<div class="mt-6 flex items-center justify-between">
-				<a href="{{ route('admin.contents.index') }}" class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">Kembali ke Daftar Konten</a>
-				<button type="submit" class="px-5 py-2 bg-[#0093DD] text-white rounded-md font-semibold hover:bg-[#0070C0]">Simpan</button>
-			</div>
-		</form>
-	</div>
-</div>
+        </div>
+    </div>
 </x-app-layout>

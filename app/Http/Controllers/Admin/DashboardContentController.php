@@ -162,4 +162,218 @@ class DashboardContentController extends Controller
         // Jika view berada di resources/views/admin/contents/create.blade.php
         return view('admin.contents.create');
     }
+
+    /**
+     * Menampilkan form edit
+     */
+    public function edit(Request $request, $id)
+    {
+        $type = $request->input('type');
+
+        try {
+            $content = match ($type) {
+                'news' => News::findOrFail($id),
+                'press_release' => PressRelease::findOrFail($id),
+                'publication' => Publication::findOrFail($id),
+                'infographic' => Infographic::findOrFail($id),
+                default => abort(404, 'Tipe konten tidak valid')
+            };
+
+            // --- MAPPING DATA KE VARIABLE UMUM ---
+            // Agar di view kita cukup panggil 'publish_date', 'image_url', 'abstract_text', 'desc_text'
+
+            // 1. Mapping Tanggal & Gambar (Sama seperti sebelumnya)
+            if ($type === 'publication') {
+                $content->publish_date = $content->release_date;
+                $content->image_url = $content->cover_url;
+            } elseif ($type === 'infographic') {
+                $content->publish_date = $content->date;
+            } else {
+                $content->publish_date = $content->date;
+                $content->image_url = $content->thumbnail_url;
+            }
+
+            // 2. Mapping Abstraksi & Deskripsi (BARU)
+            // Kita buat atribut sementara agar view tidak bingung
+            if ($type === 'publication') {
+                $content->abstract_text = $content->abstract; // Kolom database: abstract
+                $content->desc_text = null; // Publikasi jarang punya 'content' panjang selain abstrak
+            } elseif ($type === 'news' || $type === 'press_release') {
+                $content->abstract_text = null;
+                $content->desc_text = $content->content; // Kolom database: content
+            } elseif ($type === 'infographic') {
+                $content->abstract_text = null;
+                $content->desc_text = $content->description; // Kolom database: description
+            }
+
+            return view('admin.contents.edit', compact('content', 'type'));
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Konten tidak ditemukan.']);
+        }
+    }
+
+    /**
+     * Update data ke database
+     */
+    public function update(Request $request, $id)
+    {
+        $type = $request->input('type');
+
+        // 1. VALIDASI TAMBAHAN (Abstraksi & Deskripsi)
+        $rules = [
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|string',
+            'publish_date' => 'nullable|date',
+            'link' => 'nullable|url',
+
+            // Validasi Baru
+            'abstract' => 'nullable|string', // Untuk input abstraksi
+            'description' => 'nullable|string', // Untuk input deskripsi/konten utama
+        ];
+
+        $request->validate($rules);
+
+        try {
+            switch ($type) {
+                case 'news':
+                    $item = News::findOrFail($id);
+                    $item->update([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date,
+                        'link' => $request->link,
+                        'thumbnail_url' => $request->image_url,
+
+                        // Simpan Deskripsi ke kolom 'content'
+                        'content' => $request->description,
+                    ]);
+                    break;
+
+                case 'press_release':
+                    $item = PressRelease::findOrFail($id);
+                    $item->update([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date,
+                        'link' => $request->link,
+                        'thumbnail_url' => $request->image_url,
+
+                        // Simpan Deskripsi ke kolom 'content'
+                        'content' => $request->description,
+                    ]);
+                    break;
+
+                case 'publication':
+                    $item = Publication::findOrFail($id);
+                    $item->update([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'release_date' => $request->publish_date,
+                        'link' => $request->link,
+                        'cover_url' => $request->image_url,
+
+                        // Simpan Abstraksi ke kolom 'abstract'
+                        'abstract' => $request->abstract,
+                    ]);
+                    break;
+
+                case 'infographic':
+                    $item = Infographic::findOrFail($id);
+                    $item->update([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date,
+                        'image_url' => $request->image_url,
+
+                        // Simpan Deskripsi ke kolom 'description'
+                        'description' => $request->description,
+                    ]);
+                    break;
+
+                default:
+                    return back()->withErrors(['error' => 'Tipe konten tidak valid.']);
+            }
+
+            return redirect()->route('admin.contents.index')->with('success', 'Konten berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Gagal update konten: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Menyimpan konten baru ke database
+     */
+    public function store(Request $request)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'type' => 'required|string|in:news,press_release,publication,infographic',
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|string',
+            'publish_date' => 'nullable|date',
+            'link' => 'nullable|url',
+            'image_url' => 'nullable|string', // Jika input teks URL
+
+            'abstract' => 'nullable|string',     // Opsional (publikasi)
+            'description' => 'nullable|string',  // Opsional (news/dll)
+        ]);
+
+        $type = $request->input('type');
+
+        try {
+            // 2. Mapping & Create berdasarkan Tipe
+            switch ($type) {
+                case 'news':
+                    News::create([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date, // Mapping: publish_date -> date
+                        'link' => $request->link,
+                        'thumbnail_url' => $request->image_url,
+                        'content' => $request->description, // Mapping: description -> content
+                    ]);
+                    break;
+
+                case 'press_release':
+                    PressRelease::create([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date,
+                        'link' => $request->link,
+                        'thumbnail_url' => $request->image_url,
+                        'content' => $request->description,
+                    ]);
+                    break;
+
+                case 'publication':
+                    Publication::create([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'release_date' => $request->publish_date, // Mapping: publish_date -> release_date
+                        'link' => $request->link,
+                        'cover_url' => $request->image_url, // Mapping: image_url -> cover_url
+                        'abstract' => $request->abstract, // Mapping: abstract -> abstract
+                    ]);
+                    break;
+
+                case 'infographic':
+                    Infographic::create([
+                        'title' => $request->title,
+                        'category' => $request->category,
+                        'date' => $request->publish_date,
+                        'image_url' => $request->image_url,
+                        'description' => $request->description, // Mapping: description -> description
+                        // Infographic biasanya link-nya opsional atau null, tapi jika ada kolomnya di DB, simpan saja:
+                        // 'link' => $request->link 
+                    ]);
+                    break;
+            }
+
+            return redirect()->route('admin.contents.index')->with('success', 'Konten baru berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            // Log error jika perlu: Log::error($e->getMessage());
+            return back()->withInput()->withErrors(['error' => 'Gagal menyimpan konten: ' . $e->getMessage()]);
+        }
+    }
+    
 }

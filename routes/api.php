@@ -12,7 +12,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 // Route untuk memulai proses sinkronisasi (sebagai admin)
-Route::post('/sync', [BpsSyncController::class, 'store']);
+// Route::post('/sync', [BpsSyncController::class, 'store']);
 
 // Route untuk mengambil data yang sudah ada (untuk frontend)
 Route::get('/data/{dataset_code}', [BpsDataController::class, 'show']);

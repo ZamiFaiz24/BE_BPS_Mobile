@@ -70,6 +70,11 @@
                                     <x-heroicon-o-eye class="w-5 h-5" />
                                 </a>
                             @endif
+                            <a href="{{ route('admin.contents.edit', ['content' => $content->id, 'type' => $content->type]) }}" 
+                            class="text-[#EB891C] hover:text-[#D97706] inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-orange-50 transition" 
+                            title="Edit">
+                                <x-heroicon-o-pencil class="w-5 h-5" />
+                            </a>
                             <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
                                 @csrf
                                 @method('DELETE')

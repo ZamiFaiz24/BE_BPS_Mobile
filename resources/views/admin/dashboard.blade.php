@@ -38,7 +38,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Dataset Tersimpan</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ $datasetCount }}</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ $datasetCount ?? 0 }}</p>
                             <p class="text-xs text-gray-400 mt-1">Total dataset yang dikelola dari sumber BPS Kebumen.</p>
                         </div>
                     </div>

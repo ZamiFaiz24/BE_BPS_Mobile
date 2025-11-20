@@ -53,7 +53,7 @@
                         <div class="p-3 bg-green-50 rounded-lg border border-green-100">
                             <p class="text-xs text-gray-500 mb-1">Operator</p>
                             <p class="text-xs font-mono text-gray-700">operator@bpsapp.com</p>
-                            <p class="text-xs font-mono text-gray-700">admin123</p>
+                            <p class="text-xs font-mono text-gray-700">password123</p>
                         </div>
                     </div>
 

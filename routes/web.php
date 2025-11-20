@@ -18,7 +18,7 @@ Route::get('/', function () {
 
 // Ini adalah route dashboard BREEZE default (jika ada user non-admin)
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return view('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Rute untuk Halaman PROFIL (bisa diakses semua user)
