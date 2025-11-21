@@ -86,23 +86,86 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD] transition">
                         </div>
 
-                        {{-- 6. Image URL --}}
-                        <div class="mb-6">
-                            <label for="image_url" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar (Thumbnail/Cover)</label>
-                            <div class="flex gap-4 items-start">
+                        {{-- 6. Image Upload / URL dengan Tab Switcher --}}
+                        <div class="mb-6" x-data="{ imageSource: 'url' }">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Gambar / Cover / Thumbnail</label>
+                            
+                            {{-- Tab Buttons --}}
+                            <div class="flex gap-2 mb-3">
+                                <button type="button" 
+                                    @click="imageSource = 'url'"
+                                    :class="imageSource === 'url' ? 'bg-[#0093DD] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z"/>
+                                        <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z"/>
+                                    </svg>
+                                    URL Gambar
+                                </button>
+                                <button type="button" 
+                                    @click="imageSource = 'upload'"
+                                    :class="imageSource === 'upload' ? 'bg-[#0093DD] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z"/>
+                                        <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/>
+                                    </svg>
+                                    Upload Gambar
+                                </button>
+                            </div>
+
+                            {{-- URL Input --}}
+                            <div x-show="imageSource === 'url'" x-transition class="flex gap-4 items-start">
                                 <div class="flex-1">
                                     <input type="text" name="image_url" id="image_url" 
                                         value="{{ old('image_url', $content->image_url) }}" 
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD] transition mb-2">
-                                    <p class="text-xs text-gray-500">Masukkan link gambar langsung.</p>
+                                        placeholder="https://example.com/gambar.jpg"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                                    <p class="text-xs text-gray-500 mt-1">Masukkan link gambar langsung dari website.</p>
                                 </div>
                                 
-                                {{-- Preview Gambar Kecil --}}
+                                {{-- Preview Gambar Existing --}}
                                 @if($content->image_url)
                                     <div class="flex-shrink-0 border p-1 rounded bg-gray-50">
                                         <img src="{{ $content->image_url }}" alt="Preview" class="h-16 w-16 object-cover rounded">
                                     </div>
                                 @endif
+                            </div>
+
+                            {{-- File Upload --}}
+                            <div x-show="imageSource === 'upload'" x-transition x-data="{ fileName: '', preview: '{{ $content->image_url ?? '' }}' }">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0093DD] transition">
+                                    <input type="file" name="image_file" id="image_file" accept="image/*"
+                                        @change="
+                                            fileName = $event.target.files[0]?.name || '';
+                                            if ($event.target.files[0]) {
+                                                const reader = new FileReader();
+                                                reader.onload = (e) => preview = e.target.result;
+                                                reader.readAsDataURL($event.target.files[0]);
+                                            }
+                                        "
+                                        class="hidden">
+                                    
+                                    {{-- Preview Area --}}
+                                    <div x-show="preview" class="mb-4">
+                                        <img :src="preview" alt="Preview" class="max-h-48 mx-auto rounded-lg shadow-md">
+                                    </div>
+
+                                    <label for="image_file" class="cursor-pointer">
+                                        <div class="flex flex-col items-center">
+                                            <svg class="w-12 h-12 text-gray-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                            </svg>
+                                            <p class="text-sm font-medium text-gray-700">
+                                                <span class="text-[#0093DD]">Klik untuk upload</span> atau drag & drop
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, GIF hingga 2MB</p>
+                                        </div>
+                                    </label>
+                                    
+                                    <p x-show="fileName" x-text="'File dipilih: ' + fileName" class="text-sm text-green-600 font-medium mt-3"></p>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Upload gambar baru akan menggantikan gambar lama. File akan disimpan di server.</p>
                             </div>
                         </div>
 

@@ -205,6 +205,8 @@ class DashboardContentController extends Controller
             'category' => 'nullable|string',
             'publish_date' => 'nullable|date',
             'link' => 'nullable|url',
+            'image_url' => 'nullable|string',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
             // Validasi Baru
             'abstract' => 'nullable|string', // Untuk input abstraksi
@@ -212,6 +214,16 @@ class DashboardContentController extends Controller
         ];
 
         $request->validate($rules);
+
+        // 2. Handle Image Upload atau URL
+        $imageUrl = $request->image_url;
+
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('content_images', $filename, 'public');
+            $imageUrl = asset('storage/' . $path);
+        }
 
         try {
             switch ($type) {
@@ -222,7 +234,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'date' => $request->publish_date,
                         'link' => $request->link,
-                        'thumbnail_url' => $request->image_url,
+                        'thumbnail_url' => $imageUrl,
 
                         // Simpan Deskripsi ke kolom 'content'
                         'content' => $request->description,
@@ -236,7 +248,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'date' => $request->publish_date,
                         'link' => $request->link,
-                        'thumbnail_url' => $request->image_url,
+                        'thumbnail_url' => $imageUrl,
 
                         // Simpan Deskripsi ke kolom 'content'
                         'content' => $request->description,
@@ -250,7 +262,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'release_date' => $request->publish_date,
                         'link' => $request->link,
-                        'cover_url' => $request->image_url,
+                        'cover_url' => $imageUrl,
 
                         // Simpan Abstraksi ke kolom 'abstract'
                         'abstract' => $request->abstract,
@@ -263,7 +275,7 @@ class DashboardContentController extends Controller
                         'title' => $request->title,
                         'category' => $request->category,
                         'date' => $request->publish_date,
-                        'image_url' => $request->image_url,
+                        'image_url' => $imageUrl,
 
                         // Simpan Deskripsi ke kolom 'description'
                         'description' => $request->description,
@@ -293,6 +305,7 @@ class DashboardContentController extends Controller
             'publish_date' => 'nullable|date',
             'link' => 'nullable|url',
             'image_url' => 'nullable|string', // Jika input teks URL
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Jika upload file (max 2MB)
 
             'abstract' => 'nullable|string',     // Opsional (publikasi)
             'description' => 'nullable|string',  // Opsional (news/dll)
@@ -300,8 +313,20 @@ class DashboardContentController extends Controller
 
         $type = $request->input('type');
 
+        // 2. Handle Image Upload atau URL
+        $imageUrl = $request->image_url;
+
+        if ($request->hasFile('image_file')) {
+            // Upload file ke storage/app/public/content_images
+            $file = $request->file('image_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('content_images', $filename, 'public');
+            // Generate URL untuk disimpan ke database
+            $imageUrl = asset('storage/' . $path);
+        }
+
         try {
-            // 2. Mapping & Create berdasarkan Tipe
+            // 3. Mapping & Create berdasarkan Tipe
             switch ($type) {
                 case 'news':
                     News::create([
@@ -309,7 +334,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'date' => $request->publish_date, // Mapping: publish_date -> date
                         'link' => $request->link,
-                        'thumbnail_url' => $request->image_url,
+                        'thumbnail_url' => $imageUrl,
                         'content' => $request->description, // Mapping: description -> content
                     ]);
                     break;
@@ -320,7 +345,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'date' => $request->publish_date,
                         'link' => $request->link,
-                        'thumbnail_url' => $request->image_url,
+                        'thumbnail_url' => $imageUrl,
                         'content' => $request->description,
                     ]);
                     break;
@@ -331,7 +356,7 @@ class DashboardContentController extends Controller
                         'category' => $request->category,
                         'release_date' => $request->publish_date, // Mapping: publish_date -> release_date
                         'link' => $request->link,
-                        'cover_url' => $request->image_url, // Mapping: image_url -> cover_url
+                        'cover_url' => $imageUrl, // Mapping: image_url -> cover_url
                         'abstract' => $request->abstract, // Mapping: abstract -> abstract
                     ]);
                     break;
@@ -341,9 +366,9 @@ class DashboardContentController extends Controller
                         'title' => $request->title,
                         'category' => $request->category,
                         'date' => $request->publish_date,
-                        'image_url' => $request->image_url,
+                        'image_url' => $imageUrl,
                         'description' => $request->description, // Mapping: description -> description
-                        'link' => $request->link 
+                        'link' => $request->link
                     ]);
                     break;
             }
@@ -354,5 +379,4 @@ class DashboardContentController extends Controller
             return back()->withInput()->withErrors(['error' => 'Gagal menyimpan konten: ' . $e->getMessage()]);
         }
     }
-    
 }
