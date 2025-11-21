@@ -27,4 +27,10 @@ class BpsDataset extends Model
         2 => 'Statistik Ekonomi dan Perdagangan',
         3 => 'Statistik Pertanian dan Lingkungan',
     ];
+
+    public function getCategoryLabelAttribute()
+    {
+        // Mengambil teks berdasarkan angka yang tersimpan di kolom 'category'
+        return self::CATEGORIES[$this->category] ?? 'Tidak Diketahui';
+    }
 }

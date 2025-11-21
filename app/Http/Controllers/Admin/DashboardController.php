@@ -20,7 +20,7 @@ class DashboardController extends Controller
 
         // Filter kategori
         if ($request->filled('category')) {
-            $query->whereIn('category_id', (array) $request->category);
+            $query->whereIn('category', (array) $request->category);
         }
 
         // Filter subjek

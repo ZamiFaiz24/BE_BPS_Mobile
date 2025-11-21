@@ -6,29 +6,30 @@
 
 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {{-- Info --}}
-        <div class="w-full">
-            <div class="text-sm text-gray-600 mb-2 sm:mb-0">
-                Menampilkan
-                <span class="font-semibold text-[#0093DD]">{{ $datasets->firstItem() ?? 0 }}</span>
-                sampai
-                <span class="font-semibold text-[#0093DD]">{{ $datasets->lastItem() ?? 0 }}</span>
-                dari
-                <span class="font-semibold text-[#0093DD]">{{ $datasets->total() }}</span>
-                data
-            </div>
-            <form method="GET" action="{{ url()->current() }}" class="flex items-center gap-2 mt-2">
-                <label for="per_page" class="text-sm text-gray-600">Tampilkan</label>
-                <div class="relative">
-                    <select name="per_page" id="per_page"
-                        onchange="this.form.submit()"
-                        class="appearance-none border border-gray-300 bg-white rounded-md px-3 py-1.5 text-sm focus:ring-[#0093DD] focus:border-[#0093DD] transition pr-8">
-                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                    </select>
+        {{-- Info & Per Page Selector --}}
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {{-- Info Card dengan Icon --}}
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+                <div class="text-sm">
+                    <span class="text-gray-600">Menampilkan</span>
+                    <span class="font-bold text-[#0093DD] mx-1">{{ $datasets->firstItem() ?? 0 }} - {{ $datasets->lastItem() ?? 0 }}</span>
+                    <span class="text-gray-600">dari</span>
+                    <span class="font-bold text-gray-900 mx-1">{{ number_format($datasets->total()) }}</span>
+                    <span class="text-gray-600">data</span>
                 </div>
-                <span class="text-sm text-gray-600">per halaman</span>
+            </div>
+
+            {{-- Dropdown Per Page dengan Icon --}}
+            <form method="GET" action="{{ url()->current() }}" class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-[#0093DD] transition">
+                <span class="text-sm text-gray-600 font-medium">Tampilkan</span>
+                <select name="per_page" id="per_page"
+                    onchange="this.form.submit()"
+                    class="border-0 bg-transparent text-sm font-semibold text-[#0093DD] focus:ring-0 focus:outline-none cursor-pointer pr-8">
+                    <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                </select>
+                <span class="text-sm text-gray-600 font-medium">data</span>
                 {{-- Preserve all filters/search/sort --}}
                 @foreach(request()->except(['per_page', 'page']) as $key => $val)
                     @if(is_array($val))

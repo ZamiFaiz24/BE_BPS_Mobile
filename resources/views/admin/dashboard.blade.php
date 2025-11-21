@@ -176,39 +176,60 @@
 
                     {{-- INFO FILTER AKTIF --}}
                     @php
+                        // Helper untuk merapikan array request
                         $subjectRaw = request('subject');
                         $categoryRaw = request('category');
                         $qRaw = request('q');
 
+                        // 1. Handle Subject (Array to String)
                         $subjectDisplay = is_array($subjectRaw) ? implode(', ', array_filter($subjectRaw)) : ($subjectRaw ?? '');
-                        $categoryDisplay = is_array($categoryRaw) ? implode(', ', array_filter($categoryRaw)) : ($categoryRaw ?? '');
+
+                        // 2. Handle Category (Convert ID to Name)
+                        $categoryDisplay = '';
+                        if ($categoryRaw) {
+                            $catIds = is_array($categoryRaw) ? $categoryRaw : [$categoryRaw];
+                            // Map ID ke Nama menggunakan Constant di Model
+                            $catNames = array_map(function($id) {
+                                return \App\Models\BpsDataset::CATEGORIES[$id] ?? 'Kode ' . $id;
+                            }, $catIds);
+                            $categoryDisplay = implode(', ', $catNames);
+                        }
+
+                        // 3. Handle Search Query
                         $qDisplay = is_array($qRaw) ? implode(', ', array_filter($qRaw)) : ($qRaw ?? '');
                     @endphp
                     <div class="px-6 pt-4">
                         @if($categoryDisplay || $subjectDisplay || $qDisplay)
-                            <div id="active-filters">
-                                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p class="text-sm text-gray-700">
-                                        <span class="font-semibold">Filter aktif:</span>
-                                        @if($subjectDisplay)
-                                            <span class="inline-block bg-[#0093DD] text-white px-2 py-1 rounded text-xs ml-2">
-                                                Subjek: {{ $subjectDisplay }}
-                                            </span>
-                                        @endif
-                                        @if($categoryDisplay)
-                                            <span class="inline-block bg-[#68B92E] text-white px-2 py-1 rounded text-xs ml-2">
-                                                Kategori: {{ $categoryDisplay }}
-                                            </span>
-                                        @endif
-                                        @if($qDisplay)
-                                            <span class="inline-block bg-[#EB891C] text-white px-2 py-1 rounded text-xs ml-2">
-                                                Cari: {{ $qDisplay }}
-                                            </span>
-                                        @endif
-                                    </p>
-                                </div>
+                            <div id="active-filters" class="flex items-center flex-wrap gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                
+                                <span class="text-sm font-medium text-gray-500 mr-1">Filter aktif:</span>
+
+                                {{-- BADGE SUBJEK --}}
+                                @if($subjectDisplay)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                        <span class="mr-1 text-gray-400">Subjek:</span>
+                                        {{ $subjectDisplay }}
+                                    </span>
+                                @endif
+
+                                {{-- BADGE KATEGORI (Sekarang sudah berupa Teks) --}}
+                                @if($categoryDisplay)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                        <span class="mr-1 text-gray-400">Kategori:</span>
+                                        {{ $categoryDisplay }}
+                                    </span>
+                                @endif
+
+                                {{-- BADGE PENCARIAN --}}
+                                @if($qDisplay)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                        <span class="mr-1 text-gray-400">Cari:</span>
+                                        "{{ $qDisplay }}"
+                                    </span>
+                                @endif
                             </div>
                         @else
+                            {{-- Kosongkan div jika tidak ada filter, atau hidden --}}
                             <div id="active-filters" class="hidden"></div>
                         @endif
                     </div>
@@ -266,52 +287,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search-input');
-            const activeFiltersEl = document.getElementById('active-filters');
-
-            function escapeHtml(str) {
-                return String(str).replace(/[&<>"']/g, function (s) {
-                    switch (s) {
-                        case '&': return '&amp;';
-                        case '<': return '&lt;';
-                        case '>': return '&gt;';
-                        case '"': return '&quot;';
-                        case "'": return '&#39;';
-                        default: return s;
-                    }
-                });
-            }
-
-            function renderActiveFilters(params) {
-                if (!activeFiltersEl) return;
-
-                const collect = (name) => params.getAll(name);
-                const subjectVals = collect('subject[]').concat(collect('subject'));
-                const categoryVals = collect('category[]').concat(collect('category'));
-
-                const subject = subjectVals.filter(v => v && v.trim() !== '').join(', ');
-                const category = categoryVals.filter(v => v && v.trim() !== '').join(', ');
-                const q = (params.get('q') || '').trim();
-
-                const hasAny = subject || category || q;
-
-                if (!hasAny) {
-                    activeFiltersEl.classList.add('hidden');
-                    activeFiltersEl.innerHTML = '';
-                    return;
-                }
-
-                activeFiltersEl.classList.remove('hidden');
-                activeFiltersEl.innerHTML = `
-                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p class="text-sm text-gray-700">
-                            <span class="font-semibold">Filter aktif:</span>
-                            ${subject ? `<span class="inline-block bg-[#0093DD] text-white px-2 py-1 rounded text-xs ml-2">Subjek: ${escapeHtml(subject)}</span>` : ``}
-                            ${category ? `<span class="inline-block bg-[#68B92E] text-white px-2 py-1 rounded text-xs ml-2">Kategori: ${escapeHtml(category)}</span>` : ``}
-                            ${q ? `<span class="inline-block bg-[#EB891C] text-white px-2 py-1 rounded text-xs ml-2">Cari: ${escapeHtml(q)}</span>` : ``}
-                        </p>
-                    </div>
-                `;
-            }
 
             function performSearch() {
                 const container = document.getElementById('dataset-container');
@@ -324,15 +299,10 @@
                     .then(html => {
                         container.innerHTML = html;
                         window.history.pushState({}, '', `{{ route('admin.dashboard') }}?${currentUrlParams.toString()}`);
-                        renderActiveFilters(currentUrlParams);
                     });
             }
 
             searchInput.addEventListener('input', debounce(performSearch, 400));
-            renderActiveFilters(new URLSearchParams(window.location.search));
-            window.addEventListener('popstate', () => {
-                renderActiveFilters(new URLSearchParams(window.location.search));
-            });
         });
     </script>
 
