@@ -31,6 +31,13 @@
                           x-data="{ type: '{{ old('type', '') }}' }">
                         @csrf
 
+                        {{-- Hidden inputs untuk preserve filter & pagination --}}
+                        @foreach(['type' => 'filter_type', 'category' => 'filter_category', 'q' => 'filter_q', 'sort' => 'filter_sort', 'page' => 'return_page', 'per_page' => 'return_per_page'] as $key => $name)
+                            @if(request($key))
+                                <input type="hidden" name="{{ $name }}" value="{{ request($key) }}">
+                            @endif
+                        @endforeach
+
                         {{-- 1. PILIH TIPE KONTEN (Wajib) --}}
                         <div class="mb-6 border-b pb-6">
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Tipe Konten <span class="text-red-500">*</span></label>

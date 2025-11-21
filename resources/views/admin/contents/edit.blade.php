@@ -32,6 +32,13 @@
                         --}}
                         <input type="hidden" name="type" value="{{ $type }}">
 
+                        {{-- Hidden inputs untuk preserve filter & pagination --}}
+                        @foreach(['type' => 'filter_type', 'category' => 'filter_category', 'q' => 'filter_q', 'sort' => 'filter_sort', 'page' => 'return_page', 'per_page' => 'return_per_page'] as $key => $name)
+                            @if(request($key))
+                                <input type="hidden" name="{{ $name }}" value="{{ request($key) }}">
+                            @endif
+                        @endforeach
+
                         {{-- 1. Tipe Konten (Read Only / Info Saja) --}}
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Konten</label>

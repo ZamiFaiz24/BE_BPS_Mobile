@@ -69,8 +69,29 @@
 
                     {{-- Menampilkan pesan sukses jika ada --}}
                     @if (session('success'))
-                        <div class="bg-[#68B92E] bg-opacity-10 border border-[#68B92E] text-[#68B92E] px-4 py-3 rounded relative mb-4" role="alert">
-                            <span class="block sm:inline">{{ session('success') }}</span>
+                        <div id="success-alert" 
+                            class="bg-[#68B92E] bg-opacity-10 border-l-4 border-[#68B92E] text-[#68B92E] px-4 py-3 rounded-r relative mb-4 shadow-md flex items-center justify-between transition-all duration-500 ease-in-out" 
+                            role="alert"
+                            x-data="{ show: true }"
+                            x-show="show"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 transform translate-y-2"
+                            x-transition:enter-end="opacity-100 transform translate-y-0"
+                            x-transition:leave="transition ease-in duration-300"
+                            x-transition:leave-start="opacity-100 transform translate-y-0"
+                            x-transition:leave-end="opacity-0 transform -translate-y-2"
+                            x-init="setTimeout(() => show = false, 5000)">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-6 h-6 text-[#68B92E]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="font-medium">{{ session('success') }}</span>
+                            </div>
+                            <button @click="show = false" class="text-[#68B92E] hover:text-[#4E8C1A] transition">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+                                </svg>
+                            </button>
                         </div>
                     @endif
 
@@ -136,7 +157,7 @@
 
                             {{-- Right: Tambah Konten --}}
                             <div class="flex-shrink-0">
-                                <a href="{{ route('admin.contents.create') }}"
+                                <a href="{{ route('admin.contents.create', request()->only(['type', 'category', 'q', 'sort', 'page', 'per_page'])) }}"
                                    class="inline-flex items-center gap-2 bg-[#68B92E] hover:bg-[#4E8C1A] text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -146,22 +167,26 @@
                             </div>
                         </div>
 
-                        {{-- Info Filter Aktif (tanpa kategori) --}}
+                        {{-- Info Filter Aktif --}}
                         @if(request('type') || request('q'))
-                            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p class="text-sm text-gray-700">
-                                    <span class="font-semibold">Filter aktif:</span>
-                                    @if(request('type'))
-                                        <span class="inline-block bg-[#0093DD] text-white px-2 py-1 rounded text-xs ml-2">
-                                            Tipe: {{ ucfirst(str_replace('_', ' ', request('type'))) }}
-                                        </span>
-                                    @endif
-                                    @if(request('q'))
-                                        <span class="inline-block bg-[#EB891C] text-white px-2 py-1 rounded text-xs ml-2">
-                                            Judul: {{ request('q') }}
-                                        </span>
-                                    @endif
-                                </p>
+                            <div class="mt-4 flex items-center flex-wrap gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <span class="text-sm font-medium text-gray-500 mr-1">Filter aktif:</span>
+
+                                {{-- BADGE TIPE --}}
+                                @if(request('type'))
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                        <span class="mr-1 text-gray-400">Tipe:</span>
+                                        {{ ucfirst(str_replace('_', ' ', request('type'))) }}
+                                    </span>
+                                @endif
+
+                                {{-- BADGE PENCARIAN --}}
+                                @if(request('q'))
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                        <span class="mr-1 text-gray-400">Cari:</span>
+                                        "{{ request('q') }}"
+                                    </span>
+                                @endif
                             </div>
                         @endif
                     </form>

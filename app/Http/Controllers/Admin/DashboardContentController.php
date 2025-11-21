@@ -286,7 +286,16 @@ class DashboardContentController extends Controller
                     return back()->withErrors(['error' => 'Tipe konten tidak valid.']);
             }
 
-            return redirect()->route('admin.contents.index')->with('success', 'Konten berhasil diperbarui.');
+            // Preserve filter & pagination saat redirect
+            $queryParams = [];
+            if ($request->has('filter_type')) $queryParams['type'] = $request->filter_type;
+            if ($request->has('filter_category')) $queryParams['category'] = $request->filter_category;
+            if ($request->has('filter_q')) $queryParams['q'] = $request->filter_q;
+            if ($request->has('filter_sort')) $queryParams['sort'] = $request->filter_sort;
+            if ($request->has('return_page')) $queryParams['page'] = $request->return_page;
+            if ($request->has('return_per_page')) $queryParams['per_page'] = $request->return_per_page;
+
+            return redirect()->route('admin.contents.index', $queryParams)->with('success', 'Konten berhasil diperbarui.');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Gagal update konten: ' . $e->getMessage()]);
         }
@@ -373,7 +382,16 @@ class DashboardContentController extends Controller
                     break;
             }
 
-            return redirect()->route('admin.contents.index')->with('success', 'Konten baru berhasil ditambahkan.');
+            // Preserve filter & pagination saat redirect
+            $queryParams = [];
+            if ($request->has('filter_type')) $queryParams['type'] = $request->filter_type;
+            if ($request->has('filter_category')) $queryParams['category'] = $request->filter_category;
+            if ($request->has('filter_q')) $queryParams['q'] = $request->filter_q;
+            if ($request->has('filter_sort')) $queryParams['sort'] = $request->filter_sort;
+            if ($request->has('return_page')) $queryParams['page'] = $request->return_page;
+            if ($request->has('return_per_page')) $queryParams['per_page'] = $request->return_per_page;
+
+            return redirect()->route('admin.contents.index', $queryParams)->with('success', 'Konten baru berhasil ditambahkan.');
         } catch (\Exception $e) {
             // Log error jika perlu: Log::error($e->getMessage());
             return back()->withInput()->withErrors(['error' => 'Gagal menyimpan konten: ' . $e->getMessage()]);
