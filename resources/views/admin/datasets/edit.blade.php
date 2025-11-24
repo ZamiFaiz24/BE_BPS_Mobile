@@ -59,10 +59,8 @@
                             Subject
                         </label>
 
-                        @if(isset($subjects) && $subjects && count($subjects) > 0)
-                            @php
-                                $selectedSubjectId = old('subject_id', $dataset->subject_id ?? null);
-                            @endphp
+                        {{-- Cek apakah variabel $subjects ada dan memiliki isi --}}
+                        @if(isset($subjects) && count($subjects) > 0)
                             <select
                                 id="subject"
                                 name="subject_id"
@@ -70,17 +68,20 @@
                             >
                                 <option value="">— Pilih Subject —</option>
                                 @foreach($subjects as $s)
-                                    @php
-                                        $label = $s->name ?? $s->subject_name ?? $s->title ?? $s->label ?? $s->subject ?? ('Subject #'.$s->id);
-                                    @endphp
-                                    <option value="{{ $s->id }}" @selected($selectedSubjectId == $s->id)>{{ $label }}</option>
+                                    <option value="{{ $s->id }}" {{ old('subject_id', $dataset->subject_id) == $s->id ? 'selected' : '' }}>
+                                        {{ $s->name ?? $s->subject_name ?? $s->title ?? ('Subject #' . $s->id) }}
+                                    </option>
                                 @endforeach
                             </select>
+                            
                             <p class="text-xs text-gray-500 mt-1">Pilih subject dari daftar yang tersedia.</p>
+                            
                             @error('subject_id')
                                 <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                             @enderror
+
                         @else
+                            {{-- Fallback Input Teks --}}
                             <input
                                 id="subject"
                                 type="text"
@@ -89,7 +90,9 @@
                                 value="{{ old('subject', $dataset->subject ?? '') }}"
                                 placeholder="Masukkan subject data"
                             >
+                            
                             <p class="text-xs text-gray-500 mt-1">Dropdown subject tidak tersedia. Menggunakan input teks.</p>
+                            
                             @error('subject')
                                 <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                             @enderror
