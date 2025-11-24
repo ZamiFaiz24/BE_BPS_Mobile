@@ -5,32 +5,34 @@
             
             <!-- Left: Illustration dengan 3 warna BPS sesuai logo (Biru, Hijau, Oranye) -->
             <div class="lg:col-span-2 bg-gradient-to-br from-[#0093DD] via-[#00A651] to-[#FF8C00] p-8 flex flex-col items-center justify-center text-white relative overflow-hidden">
-                <!-- Decorative circles dengan warna BPS -->
                 <div class="absolute top-0 right-0 w-64 h-64 bg-[#FF8C00]/20 rounded-full -translate-y-32 translate-x-32"></div>
                 <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#00A651]/20 rounded-full translate-y-32 -translate-x-32"></div>
                 <div class="absolute top-1/2 left-1/2 w-48 h-48 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
                 
                 <div class="space-y-6 text-center relative z-10">
-                    <!-- Logo dalam kotak putih -->
                     <div class="w-32 h-32 mx-auto bg-white rounded-2xl flex items-center justify-center shadow-xl">
                         <img src="{{ asset('images/logo-bps.png') }}" alt="BPS" class="w-20 object-contain">
                     </div>
+                    
                     <div>
-                        <h2 class="text-3xl font-bold drop-shadow-lg">BPS Mobile</h2>
-                        <p class="text-white/90 mt-2 text-lg drop-shadow">Sistem Informasi Statistik</p>
+                        <h2 class="text-3xl font-bold drop-shadow-lg">Portal Admin BPS</h2>
+                        <p class="text-white/90 mt-2 text-lg drop-shadow">Kelola Data & Informasi Statistik</p>
                     </div>
                     
-                   <div class="space-y-2 pt-4">
-                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                        🏛️ Sistem Resmi Internal BPS
+                    <div class="space-y-2 pt-4 w-full max-w-xs mx-auto">
+                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm font-medium border border-white/20 shadow-lg flex items-center gap-3 text-left hover:bg-white/20 transition cursor-default">
+                            <span class="text-xl">📊</span> 
+                            <span>Manajemen Dataset & Publikasi</span>
+                        </div>
+                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm font-medium border border-white/20 shadow-lg flex items-center gap-3 text-left hover:bg-white/20 transition cursor-default">
+                            <span class="text-xl">📰</span> 
+                            <span>Update Berita & Kegiatan</span>
+                        </div>
+                        <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm font-medium border border-white/20 shadow-lg flex items-center gap-3 text-left hover:bg-white/20 transition cursor-default">
+                            <span class="text-xl">🔄</span> 
+                            <span>Sinkronisasi Data Terpusat</span>
+                        </div>
                     </div>
-                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                        🗃️ Manajemen Data Terpusat
-                    </div>
-                    <div class="bg-white/15 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20 shadow-lg">
-                        🔒 Akses Aman & Terbatas
-                    </div>
-                </div>
                 </div>
             </div>
 

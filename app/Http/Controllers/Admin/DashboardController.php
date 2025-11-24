@@ -179,12 +179,14 @@ class DashboardController extends Controller
     public function destroy(BpsDataset $dataset)
     {
         $dataset->delete();
-
-        return redirect()->route('admin.dashboard')->with('status', 'Dataset berhasil dihapus.');
+        // Preserve filter & pagination context if provided
+        $preserve = request()->only(['category', 'subject', 'q', 'sort', 'order', 'page', 'per_page']);
+        return redirect()->route('admin.dashboard', $preserve)->with('status', 'Dataset berhasil dihapus.');
     }
 
     public function edit(BpsDataset $dataset)
     {
+        // Pass along current filter context implicitly via query params
         return view('admin.datasets.edit', compact('dataset'));
     }
 
@@ -197,7 +199,9 @@ class DashboardController extends Controller
         $dataset->update([
             'insight_type' => $request->insight_type,
         ]);
-        return redirect()->route('admin.dashboard')->with('status', 'Tipe insight berhasil diubah.');
+        // Preserve filter & pagination context
+        $preserve = $request->only(['category', 'subject', 'q', 'sort', 'order', 'page', 'per_page']);
+        return redirect()->route('admin.dashboard', $preserve)->with('status', 'Tipe insight berhasil diubah.');
     }
 
     public function ajaxSearch(Request $request)

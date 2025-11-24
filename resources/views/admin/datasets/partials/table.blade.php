@@ -58,17 +58,17 @@
                 </td>
                 <td class="px-6 py-4 text-sm text-center">
                     <div class="flex items-center justify-center gap-1">
-                        <a href="{{ route('admin.datasets.edit', $dataset) }}"
+                        <a href="{{ route('admin.datasets.edit', array_merge(['dataset'=>$dataset->id], request()->only(['category','subject','q','sort','order','page','per_page']))) }}"
                            class="group p-2 rounded-md bg-white border border-[#EB891C] text-[#EB891C] hover:bg-[#EB891C] hover:text-white transition"
                            title="Edit Tipe Insight">
                             <x-heroicon-o-pencil class="w-5 h-5" />
                         </a>
-                        <a href="{{ route('admin.datasets.show', $dataset) }}"
+                        <a href="{{ route('admin.datasets.show', array_merge(['dataset'=>$dataset->id], request()->only(['category','subject','q','sort','order','page','per_page']))) }}"
                            class="group p-2 rounded-md bg-white border border-[#0093DD] text-[#0093DD] hover:bg-[#0093DD] hover:text-white transition"
                            title="Lihat detail dataset">
                             <x-heroicon-o-eye class="w-5 h-5" />
                         </a>
-                        <form action="{{ route('admin.datasets.destroy', $dataset) }}"
+                        <form action="{{ route('admin.datasets.destroy', $dataset) }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}"
                               method="POST"
                               class="inline"
                               onsubmit="return confirmDelete(event)">

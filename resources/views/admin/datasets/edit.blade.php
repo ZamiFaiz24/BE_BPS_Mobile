@@ -7,7 +7,7 @@
 
     <div class="max-w-3xl mx-auto mt-8">
         <div class="mb-6">
-            <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-white border border-[#0093DD] rounded-md font-semibold text-xs text-[#0093DD] uppercase tracking-widest hover:bg-[#0093DD] hover:text-white transition duration-200">
+            <a href="{{ route('admin.dashboard', request()->only(['category','subject','q','sort','order','page','per_page'])) }}" class="inline-flex items-center px-4 py-2 bg-white border border-[#0093DD] rounded-md font-semibold text-xs text-[#0093DD] uppercase tracking-widest hover:bg-[#0093DD] hover:text-white transition duration-200">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -23,6 +23,18 @@
             <form method="POST" action="{{ route('admin.datasets.update', $dataset) }}" class="p-6">
                 @csrf
                 @method('PATCH')
+
+                {{-- Hidden inputs to preserve filter & pagination state --}}
+                @foreach(['category','subject','q','sort','order','page','per_page'] as $param)
+                    @php($val = request($param))
+                    @if(is_array($val))
+                        @foreach($val as $v)
+                            <input type="hidden" name="{{ $param }}[]" value="{{ $v }}">
+                        @endforeach
+                    @elseif(!is_null($val) && $val !== '')
+                        <input type="hidden" name="{{ $param }}" value="{{ $val }}">
+                    @endif
+                @endforeach
 
                 <div class="grid grid-cols-1 gap-6">
                     {{-- Nama Dataset --}}
@@ -101,7 +113,7 @@
                 </div>
 
                 <div class="mt-6 flex items-center justify-end gap-2">
-                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <a href="{{ route('admin.dashboard', request()->only(['category','subject','q','sort','order','page','per_page'])) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                         Batal
                     </a>
                     <button type="submit" class="inline-flex items-center px-4 py-2 bg-[#0093DD] text-white rounded-md text-sm font-semibold hover:bg-[#0077B6]">
