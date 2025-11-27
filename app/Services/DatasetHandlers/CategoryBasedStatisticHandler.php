@@ -48,43 +48,40 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getTableData(): array
     {
-        // 1. AMBIL SEMUA DATA (Jangan pakai $this->latestValues)
-        $allData = $this->dataset->values()
-            ->orderBy('year', 'desc')
+        // Query Dasar
+        $query = $this->dataset->values();
+
+        // [PERBAIKAN] Jika ada tahun spesifik (dari dropdown), filter datanya!
+        if ($this->year) {
+            $query->where('year', $this->year);
+        }
+
+        // Ambil data dan urutkan
+        $allData = $query->orderBy('year', 'desc')
             ->orderBy($this->categoryColumn, 'asc')
             ->get();
+
+        // ... (Sisa kode ke bawah SAMA PERSIS dengan sebelumnya) ...
+        // ... (Logika headers, grouping rows, dll tidak perlu diubah) ...
 
         if ($allData->isEmpty()) {
             return ['headers' => [], 'rows' => []];
         }
 
-        // 2. Tentukan Kolom Unit (Sama seperti sebelumnya)
         $units = $allData->pluck('unit')->unique()->filter()->values()->toArray();
-        if (empty($units)) {
-            $units = ['Nilai'];
-        }
+        if (empty($units)) $units = ['Nilai'];
 
-        // 3. Header ditambah kolom 'Tahun'
+        // Buat Headers (Hapus 'Tahun' kalau mau tabel bersih, atau biarkan)
+        // Kalau difilter per tahun, kolom 'Tahun' jadi tidak terlalu berguna, bisa dihapus di sini atau di Android
         $headers = array_merge(['Tahun', 'Kategori'], $units);
 
-        // 4. Grouping berdasarkan Tahun DAN Kategori
-        // Agar barisnya unik per kombinasi Tahun + Kategori
         $rows = [];
-
-        // Kita loop manual saja agar rapi
-        // Group dulu by Tahun
         $groupedByYear = $allData->groupBy('year');
 
         foreach ($groupedByYear as $year => $itemsInYear) {
-            // Di dalam tahun yang sama, group by Kategori
             $groupedByCategory = $itemsInYear->groupBy($this->categoryColumn);
-
             foreach ($groupedByCategory as $category => $items) {
-                $row = [
-                    'Tahun' => $year,
-                    'Kategori' => $category
-                ];
-
+                $row = ['Tahun' => $year, 'Kategori' => $category];
                 foreach ($units as $unit) {
                     $item = ($unit === 'Nilai') ? $items->first() : $items->firstWhere('unit', $unit);
                     $row[$unit] = $item ? $item->value : null;

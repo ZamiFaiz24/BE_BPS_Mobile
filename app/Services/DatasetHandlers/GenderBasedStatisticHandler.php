@@ -71,22 +71,25 @@ class GenderBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getTableData(): array
     {
-        // 1. Ambil data semua tahun (Laki & Perempuan)
-        $allData = $this->dataset->values()
-            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
-            ->orderBy('year', 'desc') // Tahun terbaru di atas
-            ->get();
+        // Query Dasar
+        $query = $this->dataset->values()
+            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan']);
 
-        // 2. Format menjadi baris tabel
+        // [PERBAIKAN] Hormati filter tahun
+        if ($this->year) {
+            $query->where('year', $this->year);
+        }
+
+        $allData = $query->orderBy('year', 'desc')->get();
+
         $rows = $allData->map(function ($item) {
             return [
-                'Tahun' => $item->year, // Kolom baru
+                'Tahun' => $item->year,
                 'Jenis Kelamin' => $item->{$this->genderColumn},
                 $this->unit => $item->value,
             ];
         })->all();
 
-        // 3. Kembalikan header dan rows
         return [
             'headers' => ["Tahun", "Jenis Kelamin", $this->unit],
             'rows' => $rows,
