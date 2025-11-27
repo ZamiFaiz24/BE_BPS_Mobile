@@ -122,21 +122,69 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
     public function getInsightData(): array
     {
         if ($this->latestValues->isEmpty()) {
-            return [['title' => 'Info', 'value' => 'Data tidak tersedia', 'description' => 'Tidak ada data untuk ditampilkan.']];
+            return [['title' => 'Info', 'value' => 'Data Kosong', 'description' => 'Data tidak tersedia.']];
         }
 
-        $max = $this->latestValues->sortByDesc('value')->first();
-        $unit = $max->unit ?? '';
+        // 1. PISAHKAN DATA: Detail (Kecamatan) vs Agregat (Kabupaten/Total)
+        // Menggunakan partition() collection Laravel:
+        // $aggregates = data baris total (Kabupaten)
+        // $details = data baris rincian (Kecamatan)
+        [$aggregates, $details] = $this->latestValues->partition(function ($item) {
+            $name = strtolower($item->{$this->categoryColumn});
+            return str_contains($name, 'kabupaten') ||
+                str_contains($name, 'jumlah') ||
+                str_contains($name, 'total');
+        });
 
-        return [
-            [
-                'title' => 'Kategori Tertinggi',
-                'value' => $max ? $max->{$this->categoryColumn} : '-',
-                'description' => $max
-                    ? 'Nilai tertinggi adalah ' . $max->{$this->categoryColumn} . ' (' . $max->value . ' ' . $unit . ') pada tahun ' . $this->year
-                    : 'Data tidak tersedia.',
-            ]
-        ];
+        // Safety: Jika $details kosong (misal data cuma 1 baris total), pakai semua data
+        if ($details->isEmpty()) {
+            $details = $this->latestValues;
+        }
+
+        // 2. LOGIC PERHITUNGAN
+        // Cari Max (Terpadat) dan Min (Tersepi) hanya dari $details
+        $max = $details->sortByDesc('value')->first();
+        $min = $details->sortBy('value')->first();
+
+        // Ambil nilai Total untuk penyebut persentase
+        // Jika ada baris "Kabupaten", pakai itu. Jika tidak, jumlahkan semua details.
+        $totalValue = $aggregates->isNotEmpty()
+            ? $aggregates->first()->value
+            : $details->sum('value');
+
+        $unit = $max->unit ?? '';
+        $insights = [];
+
+        // --- Insight 1: Tertinggi (Terpadat) ---
+        if ($max) {
+            $insights[] = [
+                'title' => 'Nilai Tertinggi', // Bisa diganti "Kecamatan Terpadat" jika konteksnya pasti wilayah
+                'value' => $max->{$this->categoryColumn},
+                'description' => "Wilayah dengan angka tertinggi adalah {$max->{$this->categoryColumn}} (" . number_format($max->value, 0, ',', '.') . " $unit).",
+            ];
+        }
+
+        // --- Insight 2: Terendah (Tersepi) ---
+        if ($min) {
+            $insights[] = [
+                'title' => 'Nilai Terendah', // Bisa diganti "Kecamatan Tersepi"
+                'value' => $min->{$this->categoryColumn},
+                'description' => "Wilayah dengan angka terendah adalah {$min->{$this->categoryColumn}} (" . number_format($min->value, 0, ',', '.') . " $unit).",
+            ];
+        }
+
+        // --- Insight 3: Proporsi (Persentase) ---
+        if ($max && $totalValue > 0) {
+            $percentage = ($max->value / $totalValue) * 100;
+
+            $insights[] = [
+                'title' => 'Dominasi Wilayah', // Atau "Proporsi " . $max->{$this->categoryColumn}
+                'value' => number_format($percentage, 1) . '%', // Contoh: 9.6%
+                'description' => "Sekitar " . number_format($percentage, 1) . "% dari total data terpusat di " . $max->{$this->categoryColumn} . ".",
+            ];
+        }
+
+        return $insights;
     }
 
     // ======================================================================
