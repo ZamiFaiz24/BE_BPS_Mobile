@@ -48,22 +48,51 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getTableData(): array
     {
-        $units = $this->latestValues->pluck('unit')->unique()->filter()->values()->toArray();
+        // 1. AMBIL SEMUA DATA (Jangan pakai $this->latestValues)
+        $allData = $this->dataset->values()
+            ->orderBy('year', 'desc')
+            ->orderBy($this->categoryColumn, 'asc')
+            ->get();
+
+        if ($allData->isEmpty()) {
+            return ['headers' => [], 'rows' => []];
+        }
+
+        // 2. Tentukan Kolom Unit (Sama seperti sebelumnya)
+        $units = $allData->pluck('unit')->unique()->filter()->values()->toArray();
         if (empty($units)) {
             $units = ['Nilai'];
         }
-        $headers = array_merge(['Kategori'], $units);
-        $grouped = $this->latestValues->groupBy($this->categoryColumn);
 
+        // 3. Header ditambah kolom 'Tahun'
+        $headers = array_merge(['Tahun', 'Kategori'], $units);
+
+        // 4. Grouping berdasarkan Tahun DAN Kategori
+        // Agar barisnya unik per kombinasi Tahun + Kategori
         $rows = [];
-        foreach ($grouped as $kategori => $items) {
-            $row = ['Kategori' => $kategori];
-            foreach ($units as $unit) {
-                $item = ($unit === 'Nilai') ? $items->first() : $items->firstWhere('unit', $unit);
-                $row[$unit] = $item ? $item->value : null;
+
+        // Kita loop manual saja agar rapi
+        // Group dulu by Tahun
+        $groupedByYear = $allData->groupBy('year');
+
+        foreach ($groupedByYear as $year => $itemsInYear) {
+            // Di dalam tahun yang sama, group by Kategori
+            $groupedByCategory = $itemsInYear->groupBy($this->categoryColumn);
+
+            foreach ($groupedByCategory as $category => $items) {
+                $row = [
+                    'Tahun' => $year,
+                    'Kategori' => $category
+                ];
+
+                foreach ($units as $unit) {
+                    $item = ($unit === 'Nilai') ? $items->first() : $items->firstWhere('unit', $unit);
+                    $row[$unit] = $item ? $item->value : null;
+                }
+                $rows[] = $row;
             }
-            $rows[] = $row;
         }
+
         return ['headers' => $headers, 'rows' => $rows];
     }
 

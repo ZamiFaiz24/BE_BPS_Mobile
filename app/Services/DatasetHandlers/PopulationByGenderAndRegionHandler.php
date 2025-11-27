@@ -1,5 +1,4 @@
 <?php
-// app/Services/DatasetHandlers/PopulationByGenderAndRegionHandler.php
 
 namespace App\Services\DatasetHandlers;
 
@@ -17,50 +16,82 @@ class PopulationByGenderAndRegionHandler implements DatasetHandlerInterface
         $this->latestYear = $dataset->values()->max('year');
     }
 
+    // --- BAGIAN 1: TABLE DATA (Tampilkan Semua Tahun) ---
     public function getTableData(): array
     {
-        // Query ini akan mengambil data mentah, lalu kita olah
-        $values = $this->dataset->values()->where('year', $this->latestYear)->get();
-        // Kelompokkan data berdasarkan kecamatan ('region_name' atau 'var_label')
-        $grouped = $values->groupBy('var_label');
+        // 1. Ambil SEMUA data, urutkan tahun dari yang terbaru
+        $allValues = $this->dataset->values()
+            ->orderBy('year', 'desc')
+            ->get();
+
+        // 2. Kelompokkan berdasarkan Tahun
+        $groupedByYear = $allValues->groupBy('year');
 
         $rows = [];
-        foreach ($grouped as $region => $data) {
-            // Di dalam setiap kecamatan, cari nilai Laki-laki dan Perempuan
-            $lakiLaki = $data->firstWhere('turvar_label', 'Laki-laki')->value ?? 0;
-            $perempuan = $data->firstWhere('turvar_label', 'Perempuan')->value ?? 0;
-            $rows[] = [
-                'Kecamatan' => $region,
-                'Laki-laki' => $lakiLaki,
-                'Perempuan' => $perempuan,
-                'Jumlah'    => $lakiLaki + $perempuan,
-            ];
+
+        // 3. Loop setiap tahun
+        foreach ($groupedByYear as $year => $itemsInYear) {
+            // Kelompokkan berdasarkan Kecamatan
+            $groupedByRegion = $itemsInYear->groupBy('var_label');
+
+            foreach ($groupedByRegion as $region => $data) {
+                $lakiLaki = $data->firstWhere('turvar_label', 'Laki-laki')->value ?? 0;
+                $perempuan = $data->firstWhere('turvar_label', 'Perempuan')->value ?? 0;
+
+                $rows[] = [
+                    'Tahun'     => $year, // Kolom Baru
+                    'Kecamatan' => $region,
+                    'Laki-laki' => $lakiLaki,
+                    'Perempuan' => $perempuan,
+                    'Jumlah'    => $lakiLaki + $perempuan,
+                ];
+            }
         }
 
         return [
-            'headers' => ["Kecamatan", "Laki-laki", "Perempuan", "Jumlah"],
-            'rows' => collect($rows)->sortBy('Kecamatan')->values()->all(),
+            'headers' => ["Tahun", "Kecamatan", "Laki-laki", "Perempuan", "Jumlah"],
+            'rows' => $rows,
         ];
     }
 
+    // --- BAGIAN 2: CHART DATA (Hanya Tahun Terbaru) ---
     public function getChartData(): array
     {
-        // Grafik: 5 Kecamatan dengan Penduduk Terbanyak
-        $tableData = $this->getTableData()['rows'];
-        $top5 = collect($tableData)->sortByDesc('Jumlah')->take(5);
-        
+        // Ambil data HANYA untuk tahun terbaru agar grafik Top 5 valid
+        // (Jangan ambil dari getTableData karena sekarang isinya banyak tahun)
+        $values = $this->dataset->values()->where('year', $this->latestYear)->get();
+        $grouped = $values->groupBy('var_label');
+
+        $chartItems = [];
+        foreach ($grouped as $region => $data) {
+            $lakiLaki = $data->firstWhere('turvar_label', 'Laki-laki')->value ?? 0;
+            $perempuan = $data->firstWhere('turvar_label', 'Perempuan')->value ?? 0;
+            $chartItems[] = [
+                'Kecamatan' => $region,
+                'Jumlah' => $lakiLaki + $perempuan
+            ];
+        }
+
+        // Ambil Top 5 Kecamatan Terbanyak
+        $top5 = collect($chartItems)->sortByDesc('Jumlah')->take(5);
+
         return [
             'type' => 'bar',
-            'title' => '5 Kecamatan dengan Penduduk Terbanyak',
+            'title' => '5 Kecamatan Terpadat (' . $this->latestYear . ')',
             'labels' => $top5->pluck('Kecamatan')->toArray(),
             'data' => $top5->pluck('Jumlah')->toArray(),
         ];
     }
 
+    // --- BAGIAN 3: INSIGHT DATA (Tetap Sama) ---
     public function getInsightData(): array
     {
-        // Insight: Total Penduduk dan Rasio Jenis Kelamin
         $values = $this->dataset->values()->where('year', $this->latestYear)->get();
+
+        if ($values->isEmpty()) {
+            return [['title' => 'Info', 'value' => '-', 'description' => 'Data tidak tersedia.']];
+        }
+
         $totalLakiLaki = $values->where('turvar_label', 'Laki-laki')->sum('value');
         $totalPerempuan = $values->where('turvar_label', 'Perempuan')->sum('value');
         $totalPenduduk = $totalLakiLaki + $totalPerempuan;
@@ -76,6 +107,32 @@ class PopulationByGenderAndRegionHandler implements DatasetHandlerInterface
                 'title' => 'Rasio Jenis Kelamin',
                 'value' => $sexRatio,
                 'description' => 'Terdapat ' . $sexRatio . ' laki-laki untuk setiap 100 perempuan.',
+            ],
+        ];
+    }
+
+    // --- BAGIAN 4: HISTORY DATA (Grafik Garis Tren) ---
+    public function getHistoryData(): array
+    {
+        $allValues = $this->dataset->values()->orderBy('year')->get();
+
+        if ($allValues->isEmpty()) return [];
+
+        // Hitung total penduduk per tahun
+        $yearlyTotals = $allValues->groupBy('year')->map(function ($items) {
+            // Jumlahkan Laki-laki + Perempuan
+            return $items->whereIn('turvar_label', ['Laki-laki', 'Perempuan'])->sum('value');
+        });
+
+        return [
+            'type' => 'line',
+            'title' => 'Tren Total Penduduk Kab. Kebumen',
+            'labels' => $yearlyTotals->keys()->toArray(),
+            'datasets' => [
+                [
+                    'label' => 'Total Penduduk',
+                    'data' => $yearlyTotals->values()->toArray(),
+                ],
             ],
         ];
     }

@@ -71,15 +71,25 @@ class GenderBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getTableData(): array
     {
+        // 1. Ambil data semua tahun (Laki & Perempuan)
+        $allData = $this->dataset->values()
+            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
+            ->orderBy('year', 'desc') // Tahun terbaru di atas
+            ->get();
+
+        // 2. Format menjadi baris tabel
+        $rows = $allData->map(function ($item) {
+            return [
+                'Tahun' => $item->year, // Kolom baru
+                'Jenis Kelamin' => $item->{$this->genderColumn},
+                $this->unit => $item->value,
+            ];
+        })->all();
+
+        // 3. Kembalikan header dan rows
         return [
-            'headers' => ["Jenis Kelamin", $this->unit],
-            'rows' => $this->latestValues->map(function ($item) {
-                return [
-                    // [DIUBAH] Menggunakan kolom yang benar
-                    'Jenis Kelamin' => $item->{$this->genderColumn},
-                    $this->unit => $item->value,
-                ];
-            })->all(),
+            'headers' => ["Tahun", "Jenis Kelamin", $this->unit],
+            'rows' => $rows,
         ];
     }
 
@@ -138,5 +148,31 @@ class GenderBasedStatisticHandler implements DatasetHandlerInterface
         ];
     }
 
-    // Anda bisa menambahkan method history dan lainnya di sini jika perlu
+    public function getHistoryData(): array
+    {
+        // Ambil semua data urut tahun lama -> baru
+        $allValues = $this->dataset->values()
+            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
+            ->orderBy('year', 'asc')
+            ->get();
+
+        if ($allValues->isEmpty()) return [];
+
+        // Hitung total (L+P) per tahun
+        $yearlyTotals = $allValues->groupBy('year')->map(function ($items) {
+            return $items->sum('value');
+        });
+
+        return [
+            'type' => 'line',
+            'title' => 'Tren Total (L+P) dari Tahun ke Tahun',
+            'labels' => $yearlyTotals->keys()->toArray(),
+            'datasets' => [
+                [
+                    'label' => 'Total Nilai',
+                    'data' => $yearlyTotals->values()->toArray(),
+                ],
+            ],
+        ];
+    }
 }

@@ -26,12 +26,15 @@ class SingleValueTimeSeriesHandler implements DatasetHandlerInterface
      */
     public function getTableData(): array
     {
+        $valueHeader = $this->unit ?: 'Nilai';
+
         return [
-            'headers' => ['Tahun', 'Nilai'],
-            'rows' => $this->allValues->map(function ($item) {
+            'headers' => ['Tahun', $valueHeader],
+            'rows' => $this->allValues->map(function ($item) use ($valueHeader) {
                 return [
                     'Tahun' => $item->year,
-                    'Nilai' => $item->value,
+                    // Key di sini harus sama dengan Header di atas
+                    $valueHeader => $item->value,
                 ];
             })->all(),
         ];

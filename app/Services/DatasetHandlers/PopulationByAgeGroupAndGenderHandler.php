@@ -57,33 +57,41 @@ class PopulationByAgeGroupAndGenderHandler implements DatasetHandlerInterface
 
     public function getTableData(): array
     {
-        // [DIUBAH] Gunakan kolom dinamis yang sudah terdeteksi
-        $grouped = $this->latestValues->groupBy($this->ageGroupColumn);
+        // 1. Ambil SEMUA data, urutkan tahun (desc)
+        $allValues = $this->dataset->values()
+            ->orderBy('year', 'desc')
+            ->get();
+
+        // 2. Group by Tahun dulu
+        $groupedByYear = $allValues->groupBy('year');
 
         $rows = [];
-        foreach ($grouped as $ageGroup => $data) {
-            // [DIUBAH] Gunakan kolom gender dinamis
-            $lakiLaki = $data->firstWhere($this->genderColumn, 'Laki-laki')->value ?? 0;
-            $perempuan = $data->firstWhere($this->genderColumn, 'Perempuan')->value ?? 0;
 
-            // Cek juga data 'Jumlah' jika disediakan oleh API
-            $jumlahFromApi = $data->firstWhere($this->genderColumn, 'Jumlah')->value ?? ($lakiLaki + $perempuan);
+        // 3. Loop setiap tahun
+        foreach ($groupedByYear as $year => $itemsInYear) {
+            // Group by Kelompok Umur di tahun tersebut
+            $groupedByAge = $itemsInYear->groupBy($this->ageGroupColumn);
 
-            $rows[] = [
-                'Kelompok Umur' => $ageGroup,
-                'Laki-laki' => $lakiLaki,
-                'Perempuan' => $perempuan,
-                'Jumlah'    => $jumlahFromApi,
-            ];
+            foreach ($groupedByAge as $ageGroup => $data) {
+                $lakiLaki = $data->firstWhere($this->genderColumn, 'Laki-laki')->value ?? 0;
+                $perempuan = $data->firstWhere($this->genderColumn, 'Perempuan')->value ?? 0;
+
+                // Cek apakah ada data 'Jumlah' dari API, kalau tidak ada hitung sendiri
+                $jumlahItem = $data->firstWhere($this->genderColumn, 'Jumlah');
+                $jumlah = $jumlahItem ? $jumlahItem->value : ($lakiLaki + $perempuan);
+
+                $rows[] = [
+                    'Tahun' => $year, // Kolom Baru
+                    'Kelompok Umur' => $ageGroup,
+                    'Laki-laki' => $lakiLaki,
+                    'Perempuan' => $perempuan,
+                    'Jumlah'    => $jumlah,
+                ];
+            }
         }
 
-        // Urutkan berdasarkan kelompok umur
-        usort($rows, function ($a, $b) {
-            return strcmp($a['Kelompok Umur'], $b['Kelompok Umur']);
-        });
-
         return [
-            'headers' => ["Kelompok Umur", "Laki-laki", "Perempuan", "Jumlah"],
+            'headers' => ["Tahun", "Kelompok Umur", "Laki-laki", "Perempuan", "Jumlah"],
             'rows' => $rows,
         ];
     }
@@ -131,6 +139,31 @@ class PopulationByAgeGroupAndGenderHandler implements DatasetHandlerInterface
                 'value' => $largestGroup['Kelompok Umur'] ?? 'N/A',
                 'description' => 'Dengan total ' . number_format($largestGroup['Jumlah'] ?? 0) . ' jiwa pada tahun ' . $this->latestYear,
             ]
+        ];
+    }
+
+    public function getHistoryData(): array
+    {
+        $allValues = $this->dataset->values()->orderBy('year', 'asc')->get();
+        if ($allValues->isEmpty()) return [];
+
+        // Hitung total penduduk per tahun
+        $yearlyTotals = $allValues->groupBy('year')->map(function ($items) {
+            // Prioritaskan ambil label 'Jumlah', jika tidak ada baru jumlahkan L+P
+            $jumlahItem = $items->firstWhere($this->genderColumn, 'Jumlah');
+            if ($jumlahItem) {
+                return $jumlahItem->value;
+            }
+            return $items->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])->sum('value');
+        });
+
+        return [
+            'type' => 'line',
+            'title' => 'Tren Total Penduduk',
+            'labels' => $yearlyTotals->keys()->toArray(),
+            'datasets' => [
+                ['label' => 'Total Penduduk', 'data' => $yearlyTotals->values()->toArray()],
+            ],
         ];
     }
 }

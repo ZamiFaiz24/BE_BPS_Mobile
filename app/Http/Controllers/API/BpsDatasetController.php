@@ -78,11 +78,8 @@ class BpsDatasetController extends Controller
         ]);
     }
 
-    // --- JANGAN LUPA UPDATE FUNGSI LAIN (history & insights) ---
-
     public function history(BpsDataset $dataset)
     {
-        // Panggil detektif lagi
         $handlerClass = $this->detectHandler($dataset);
 
         $year = request('year');
