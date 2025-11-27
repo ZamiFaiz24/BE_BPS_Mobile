@@ -50,15 +50,13 @@ class BpsDatasetController extends Controller
 
     public function show(BpsDataset $dataset)
     {
-        // 2. PANGGIL DETEKTIF
+        // 1. Deteksi Handler (Sudah ada)
         $handlerClass = $this->detectHandler($dataset);
 
-        // (Opsional) Cek Log biar tau dia pake handler apa
-        // Log::info("Dataset ID {$dataset->id} menggunakan handler: $handlerClass");
-
+        // 2. Ambil parameter tahun dari URL (?year=2023)
         $year = request('year');
 
-        // 3. Buat Handler secara dinamis
+        // 3. Buat Handler
         $handler = app()->make($handlerClass, [
             'dataset' => $dataset,
             'year' => $year,
@@ -68,16 +66,25 @@ class BpsDatasetController extends Controller
         $chartData = $handler->getChartData();
         $insightData = $handler->getInsightData();
 
+        // --- TAMBAHAN BARU: AMBIL DAFTAR TAHUN TERSEDIA ---
+        // Ini agar Android bisa bikin Dropdown (2025, 2024, 2023...)
+        $availableYears = $dataset->values()
+            ->select('year')
+            ->distinct() // Biar gak dobel2
+            ->orderBy('year', 'desc') // Tahun terbaru di atas
+            ->pluck('year');
+
         return response()->json([
             'dataset' => $dataset,
+            // Kirim daftar tahun ke FE
+            'available_years' => $availableYears,
+            'current_year' => $year ? (int)$year : $availableYears->first(), // Tahun yang sedang tampil
             'table' => $tableData,
             'chart' => $chartData,
             'insights' => $insightData,
-            // (Opsional) Kirim info handler ke frontend buat debugging
-            // 'debug_handler' => class_basename($handlerClass) 
         ]);
     }
-
+    
     public function history(BpsDataset $dataset)
     {
         $handlerClass = $this->detectHandler($dataset);
