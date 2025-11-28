@@ -12,6 +12,7 @@ use \Exception;
 
 // Impor semua kelas Handler yang akan Anda gunakan
 use App\Services\DatasetHandlers\PopulationByAgeGroupAndGenderHandler;
+use App\Services\DatasetHandlers\PopulationByGenderAndRegionHandler;
 use App\Services\DatasetHandlers\SingleValueTimeSeriesHandler;
 use App\Services\DatasetHandlers\GenderBasedStatisticHandler;
 use App\Services\DatasetHandlers\CategoryBasedStatisticHandler;
@@ -24,27 +25,31 @@ class BpsDatasetController extends Controller
         $judul = strtolower($dataset->dataset_name);
 
         // ATURAN 1: Cek Piramida Penduduk (Paling Spesifik)
-        // Ciri: Ada kata "kelompok umur" dan "jenis kelamin"
+        // Ciri: Ada "kelompok umur" dan "jenis kelamin"
         if (str_contains($judul, 'kelompok umur') && str_contains($judul, 'jenis kelamin')) {
             return PopulationByAgeGroupAndGenderHandler::class;
         }
 
-        // ATURAN 2: Cek Gender
-        // Ciri: Ada kata "jenis kelamin" tapi bukan kelompok umur
+        // [BARU] ATURAN 2: Cek Penduduk per Kecamatan & Gender
+        // Ciri: Ada "penduduk", "jenis kelamin", DAN "kecamatan"
+        // Dataset: "Jumlah Penduduk ... Menurut Jenis Kelamin dan Kecamatan"
+        if (str_contains($judul, 'penduduk') && str_contains($judul, 'kecamatan') && str_contains($judul, 'jenis kelamin')) {
+            return PopulationByGenderAndRegionHandler::class;
+        }
+
+        // ATURAN 3: Cek Gender (Umum)
+        // Ciri: Ada "jenis kelamin" tapi bukan kasus di atas
         if (str_contains($judul, 'jenis kelamin')) {
             return GenderBasedStatisticHandler::class;
         }
 
-        // ATURAN 3: Cek Kategori
-        // Ciri: Ada kata "menurut", "berdasarkan", atau "tipe"
-        // Contoh: "Menurut Kecamatan", "Menurut Lapangan Usaha", "Menurut Pendidikan"
+        // ATURAN 4: Cek Kategori (Umum)
+        // Ciri: Ada "menurut", "berdasarkan"
         if (str_contains($judul, 'menurut') || str_contains($judul, 'berdasarkan')) {
             return CategoryBasedStatisticHandler::class;
         }
 
-        // ATURAN 4: Default (Single Value / Time Series)
-        // Jika tidak ada ciri di atas, biasanya ini data total (1 angka per tahun)
-        // Contoh: "IPM Kab Kebumen", "Gini Rasio", "Jumlah Penduduk Total"
+        // ATURAN 5: Default (Time Series / Garis)
         return SingleValueTimeSeriesHandler::class;
     }
 
