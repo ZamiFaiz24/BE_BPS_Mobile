@@ -119,38 +119,83 @@ class PopulationByGenderAndRegionHandler implements DatasetHandlerInterface
 
     public function getInsightData(): array
     {
+        // 1. Cek Mode Tampilan (Gender / Region)
+        $mode = request('mode', 'gender');
+
+        // 2. Ambil Data Dasar
         $query = $this->dataset->values();
         if ($this->year) $query->where('year', $this->year);
         $allData = $query->get();
 
-        // Hitung Total Kabupaten
-        // Cari baris yang kecamatannya "Jumlah" atau "Kabupaten Kebumen"
-        // Atau hitung manual sum semua L + P
+        // --- SKENARIO 1: MODE KECAMATAN (REGION) ---
+        if ($mode === 'region') {
+            // Kita butuh data total per kecamatan
+            $regionStats = $allData->groupBy($this->regionColumn)
+                ->map(function ($items) {
+                    // Hitung total L+P di kecamatan ini
+                    return $items->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])->sum('value');
+                })
+                // Hapus baris "Total" atau "Kabupaten" agar tidak dianggap sebagai kecamatan
+                ->reject(function ($value, $key) {
+                    return in_array(strtolower($key), ['jumlah', 'total', 'kabupaten kebumen']);
+                })
+                ->sortDesc(); // Urutkan dari terbesar
 
-        $totalLaki = $allData->where($this->genderColumn, 'Laki-laki')->sum('value');
-        $totalPerempuan = $allData->where($this->genderColumn, 'Perempuan')->sum('value');
-        $totalKabupaten = $totalLaki + $totalPerempuan;
+            if ($regionStats->isEmpty()) return [];
 
-        // Sex Ratio
-        $sexRatio = ($totalPerempuan > 0) ? round(($totalLaki / $totalPerempuan) * 100, 2) : 0;
+            // Ambil Terpadat & Tersepi
+            $mostPopulatedRegion = $regionStats->keys()->first();
+            $mostPopulatedValue = $regionStats->first();
 
-        return [
-            [
-                'title' => 'Total Penduduk',
-                'value' => number_format($totalKabupaten) . " Jiwa",
-                'description' => "Total penduduk Kabupaten Kebumen tahun {$this->year}."
-            ],
-            [
-                'title' => 'Rasio Gender',
-                'value' => $sexRatio,
-                'description' => "Terdapat $sexRatio laki-laki untuk setiap 100 perempuan."
-            ],
-            [
-                'title' => 'Dominasi Gender',
-                'value' => ($totalLaki > $totalPerempuan) ? 'Laki-laki' : 'Perempuan',
-                'description' => "Penduduk " . (($totalLaki > $totalPerempuan) ? 'Laki-laki' : 'Perempuan') . " lebih banyak " . number_format(abs($totalLaki - $totalPerempuan)) . " jiwa."
-            ]
-        ];
+            $leastPopulatedRegion = $regionStats->keys()->last();
+            $leastPopulatedValue = $regionStats->last();
+
+            return [
+                [
+                    'title' => 'Kecamatan Terpadat',
+                    'value' => $mostPopulatedRegion,
+                    'description' => "Memiliki jumlah penduduk terbanyak yaitu " . number_format($mostPopulatedValue) . " jiwa."
+                ],
+                [
+                    'title' => 'Kecamatan Tersepi',
+                    'value' => $leastPopulatedRegion,
+                    'description' => "Memiliki jumlah penduduk paling sedikit yaitu " . number_format($leastPopulatedValue) . " jiwa."
+                ],
+                [
+                    'title' => 'Rata-rata Penduduk',
+                    'value' => number_format($regionStats->average()) . " Jiwa",
+                    'description' => "Rata-rata jumlah penduduk per kecamatan di Kebumen."
+                ]
+            ];
+        }
+
+        // --- SKENARIO 2: MODE GENDER (DEFAULT) ---
+        else {
+            // Logika lama Anda (sudah benar)
+            $totalLaki = $allData->where($this->genderColumn, 'Laki-laki')->sum('value');
+            $totalPerempuan = $allData->where($this->genderColumn, 'Perempuan')->sum('value');
+            $totalKabupaten = $totalLaki + $totalPerempuan;
+
+            $sexRatio = ($totalPerempuan > 0) ? round(($totalLaki / $totalPerempuan) * 100, 2) : 0;
+
+            return [
+                [
+                    'title' => 'Total Penduduk',
+                    'value' => number_format($totalKabupaten) . " Jiwa",
+                    'description' => "Total penduduk Kabupaten Kebumen tahun {$this->year}."
+                ],
+                [
+                    'title' => 'Rasio Gender',
+                    'value' => $sexRatio,
+                    'description' => "Terdapat $sexRatio laki-laki untuk setiap 100 perempuan."
+                ],
+                [
+                    'title' => 'Dominasi Gender',
+                    'value' => ($totalLaki > $totalPerempuan) ? 'Laki-laki' : 'Perempuan',
+                    'description' => "Penduduk " . (($totalLaki > $totalPerempuan) ? 'Laki-laki' : 'Perempuan') . " lebih banyak " . number_format(abs($totalLaki - $totalPerempuan)) . " jiwa."
+                ]
+            ];
+        }
     }
 
     public function getHistoryData(): array

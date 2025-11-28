@@ -13,6 +13,7 @@ use \Exception;
 // Impor semua kelas Handler yang akan Anda gunakan
 use App\Services\DatasetHandlers\PopulationByAgeGroupAndGenderHandler;
 use App\Services\DatasetHandlers\PopulationByGenderAndRegionHandler;
+use App\Services\DatasetHandlers\PopulationByAgeAndRegionHandler;
 use App\Services\DatasetHandlers\SingleValueTimeSeriesHandler;
 use App\Services\DatasetHandlers\GenderBasedStatisticHandler;
 use App\Services\DatasetHandlers\CategoryBasedStatisticHandler;
@@ -47,6 +48,10 @@ class BpsDatasetController extends Controller
         // Ciri: Ada "menurut", "berdasarkan"
         if (str_contains($judul, 'menurut') || str_contains($judul, 'berdasarkan')) {
             return CategoryBasedStatisticHandler::class;
+        }
+
+        if (str_contains($judul, 'kelompok umur') && str_contains($judul, 'kecamatan')) {
+            return PopulationByAgeAndRegionHandler::class;
         }
 
         // ATURAN 5: Default (Time Series / Garis)
