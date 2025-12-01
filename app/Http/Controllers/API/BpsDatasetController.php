@@ -25,33 +25,25 @@ class BpsDatasetController extends Controller
     {
         $judul = strtolower($dataset->dataset_name);
 
-        // ATURAN 1: Cek Piramida Penduduk (Paling Spesifik)
-        // Ciri: Ada "kelompok umur" dan "jenis kelamin"
         if (str_contains($judul, 'kelompok umur') && str_contains($judul, 'jenis kelamin')) {
             return PopulationByAgeGroupAndGenderHandler::class;
         }
 
-        // [BARU] ATURAN 2: Cek Penduduk per Kecamatan & Gender
-        // Ciri: Ada "penduduk", "jenis kelamin", DAN "kecamatan"
-        // Dataset: "Jumlah Penduduk ... Menurut Jenis Kelamin dan Kecamatan"
+        if (str_contains($judul, 'kelompok umur') && str_contains($judul, 'kecamatan')) {
+            return PopulationByAgeAndRegionHandler::class;
+        }
+
+        
         if (str_contains($judul, 'penduduk') && str_contains($judul, 'kecamatan') && str_contains($judul, 'jenis kelamin')) {
             return PopulationByGenderAndRegionHandler::class;
         }
 
-        // ATURAN 3: Cek Gender (Umum)
-        // Ciri: Ada "jenis kelamin" tapi bukan kasus di atas
         if (str_contains($judul, 'jenis kelamin')) {
             return GenderBasedStatisticHandler::class;
         }
 
-        // ATURAN 4: Cek Kategori (Umum)
-        // Ciri: Ada "menurut", "berdasarkan"
         if (str_contains($judul, 'menurut') || str_contains($judul, 'berdasarkan')) {
             return CategoryBasedStatisticHandler::class;
-        }
-
-        if (str_contains($judul, 'kelompok umur') && str_contains($judul, 'kecamatan')) {
-            return PopulationByAgeAndRegionHandler::class;
         }
 
         // ATURAN 5: Default (Time Series / Garis)
@@ -63,35 +55,38 @@ class BpsDatasetController extends Controller
         // 1. Deteksi Handler (Sudah ada)
         $handlerClass = $this->detectHandler($dataset);
 
-        // 2. Ambil parameter tahun dari URL (?year=2023)
+        // 2. Ambil parameter dari URL (dikirim oleh Android)
+        // Contoh URL: /api/datasets/20?year=2022&mode=region
         $year = request('year');
+        $mode = request('mode'); // <--- TAMBAHAN PENTING
 
-        // 3. Buat Handler
+        // 3. Buat Handler dengan parameter lengkap
+        // Parameter array ini akan masuk ke __construct Handler
         $handler = app()->make($handlerClass, [
             'dataset' => $dataset,
-            'year' => $year,
+            'year'    => $year,
+            'mode'    => $mode, // <--- KIRIM MODE KE HANDLER
         ]);
 
-        $tableData = $handler->getTableData();
-        $chartData = $handler->getChartData();
+        $tableData   = $handler->getTableData();
+        $chartData   = $handler->getChartData();
         $insightData = $handler->getInsightData();
 
-        // --- TAMBAHAN BARU: AMBIL DAFTAR TAHUN TERSEDIA ---
-        // Ini agar Android bisa bikin Dropdown (2025, 2024, 2023...)
+        // 4. Ambil daftar tahun tersedia (Logic ini sudah bagus)
         $availableYears = $dataset->values()
             ->select('year')
-            ->distinct() // Biar gak dobel2
-            ->orderBy('year', 'desc') // Tahun terbaru di atas
+            ->distinct()
+            ->orderBy('year', 'desc')
             ->pluck('year');
 
+        // 5. Kirim Response
         return response()->json([
-            'dataset' => $dataset,
-            // Kirim daftar tahun ke FE
+            'dataset'         => $dataset,
             'available_years' => $availableYears,
-            'current_year' => $year ? (int)$year : $availableYears->first(), // Tahun yang sedang tampil
-            'table' => $tableData,
-            'chart' => $chartData,
-            'insights' => $insightData,
+            'current_year'    => $year ? (int)$year : ($availableYears->first() ?? null),
+            'table'           => $tableData,
+            'chart'           => $chartData,
+            'insights'        => $insightData,
         ]);
     }
     

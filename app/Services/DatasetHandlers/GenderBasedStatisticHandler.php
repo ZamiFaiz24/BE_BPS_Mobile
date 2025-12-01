@@ -4,14 +4,16 @@ namespace App\Services\DatasetHandlers;
 
 use App\Models\BpsDataset;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class GenderBasedStatisticHandler implements DatasetHandlerInterface
 {
     protected BpsDataset $dataset;
     protected ?int $year;
     protected string $unit = '';
-    protected string $genderColumn; // [DITAMBAHKAN] Untuk menyimpan nama kolom yang benar
-    protected Collection $latestValues;
+    protected string $genderColumn;
+    protected Collection $dataForYear;
+    protected bool $isPercent = false; // Flag untuk menandai apakah ini data Persen
 
     public function __construct(BpsDataset $dataset, $year = null)
     {
@@ -19,163 +21,195 @@ class GenderBasedStatisticHandler implements DatasetHandlerInterface
         $this->year = $year ?: $dataset->values()->max('year');
 
         if ($this->year) {
-            // [LOGIKA BARU] Deteksi kolom gender secara otomatis
+            // 1. Deteksi Kolom Gender
             $this->genderColumn = $this->detectGenderColumn();
 
-            $this->latestValues = $this->fetchValuesForYear($this->year);
-            $this->unit = $this->latestValues->first()->unit ?? 'Persen';
+            // 2. Ambil SEMUA data tahun ini (termasuk baris Total/Kabupaten)
+            $this->dataForYear = $this->dataset->values()
+                ->where('year', $this->year)
+                ->get();
+
+            // 3. Deteksi Unit & Apakah Persen?
+            $firstItem = $this->dataForYear->first();
+            $this->unit = $firstItem->unit ?? '';
+
+            // Cek keyword persen, %, atau tpt (tingkat pengangguran terbuka)
+            $this->isPercent = Str::contains(strtolower($this->unit), ['persen', '%'])
+                || Str::contains(strtolower($dataset->dataset_name), ['tingkat pengangguran', 'tpt']);
         } else {
-            $this->latestValues = collect();
-            $this->genderColumn = 'vervar_label'; // Default jika tidak ada data
+            $this->dataForYear = collect();
+            $this->genderColumn = 'vervar_label';
         }
     }
 
-    /**
-     * [FUNGSI BARU]
-     * Secara cerdas mendeteksi apakah data gender ada di 'vervar_label' atau 'turvar_label'.
-     */
     private function detectGenderColumn(): string
     {
-        // Ambil satu sampel data untuk dianalisis
         $sample = $this->dataset->values()->where('year', $this->year)->first();
+        if (!$sample) return 'vervar_label';
 
-        if (!$sample) {
-            return 'vervar_label'; // Default jika tidak ada sampel
-        }
+        // Cek keywords Laki/Perempuan di kolom vervar vs turvar
+        if (in_array($sample->vervar_label, ['Laki-laki', 'Perempuan', 'Laki-Laki + Perempuan'])) return 'vervar_label';
+        if (in_array($sample->turvar_label, ['Laki-laki', 'Perempuan', 'Laki-Laki + Perempuan'])) return 'turvar_label';
 
-        // Cek di laci pertama ('vervar_label')
-        if (in_array($sample->vervar_label, ['Laki-laki', 'Perempuan'])) {
-            return 'vervar_label';
-        }
-
-        // Jika tidak ada, cek di laci kedua ('turvar_label')
-        if (in_array($sample->turvar_label, ['Laki-laki', 'Perempuan'])) {
-            return 'turvar_label';
-        }
-
-        // Jika tidak ada di keduanya, kembalikan default
         return 'vervar_label';
-    }
-
-    /**
-     * Helper untuk mengambil data berdasarkan kolom gender yang sudah terdeteksi.
-     */
-    private function fetchValuesForYear(int $year): Collection
-    {
-        return $this->dataset->values()
-            ->where('year', $year)
-            // [DIUBAH] Menggunakan variabel dinamis $this->genderColumn
-            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
-            ->get();
     }
 
     public function getTableData(): array
     {
-        // Query Dasar
-        $query = $this->dataset->values()
-            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan']);
+        $rows = [];
 
-        // [PERBAIKAN] Hormati filter tahun
-        if ($this->year) {
-            $query->where('year', $this->year);
+        foreach ($this->dataForYear as $item) {
+            $label = $item->{$this->genderColumn};
+            $val = $item->value;
+
+            // Cek apakah ini baris TOTAL (Kabupaten Kebumen / Jumlah)
+            $isTotalRow = in_array(strtolower($label), ['jumlah', 'total', 'kabupaten kebumen', 'laki-laki + perempuan']);
+
+            // --- LOGIKA UTAMA ---
+            // Jika data BUKAN Persen (misal: Jiwa), kita SKIP baris Total agar tabel bersih
+            if (!$this->isPercent && $isTotalRow) {
+                continue;
+            }
+
+            // Jika baris Total, rapikan labelnya
+            if ($isTotalRow) {
+                $label = 'Total (Kabupaten)';
+            }
+
+            $rows[] = [
+                'Tahun' => $item->year,
+                'Kategori' => $label,
+                'Nilai' => number_format($val, 2) . ' ' . $this->unit, // Format angka 2 desimal biar rapi
+            ];
         }
 
-        $allData = $query->orderBy('year', 'desc')->get();
-
-        $rows = $allData->map(function ($item) {
-            return [
-                'Tahun' => $item->year,
-                'Jenis Kelamin' => $item->{$this->genderColumn},
-                $this->unit => $item->value,
-            ];
-        })->all();
+        // Urutkan: Laki-laki, Perempuan, baru Total (jika ada)
+        usort($rows, function ($a, $b) {
+            $order = ['Laki-laki' => 1, 'Perempuan' => 2, 'Total (Kabupaten)' => 3];
+            $valA = $order[$a['Kategori']] ?? 99;
+            $valB = $order[$b['Kategori']] ?? 99;
+            return $valA <=> $valB;
+        });
 
         return [
-            'headers' => ["Tahun", "Jenis Kelamin", $this->unit],
+            'headers' => ["Tahun", "Kategori", "Nilai"],
             'rows' => $rows,
         ];
     }
 
     public function getChartData(): array
     {
-        return [
-            'type' => 'pie',
-            'title' => 'Distribusi Menurut Jenis Kelamin (' . $this->unit . ')',
-            // [DIUBAH] Menggunakan kolom yang benar
-            'labels' => $this->latestValues->pluck($this->genderColumn)->toArray(),
-            'data' => $this->latestValues->pluck('value')->toArray(),
-        ];
-    }
+        // 1. Ambil Data
+        $laki = $this->dataForYear->first(fn($i) => Str::contains(strtolower($i->{$this->genderColumn}), 'laki'))->value ?? 0;
+        $pr   = $this->dataForYear->first(fn($i) => Str::contains(strtolower($i->{$this->genderColumn}), 'perempuan'))->value ?? 0;
 
-    public function getInsightData(): array
-    {
-        if ($this->latestValues->isEmpty()) {
-            return [['title' => 'Info', 'value' => 'Data tidak tersedia', 'description' => 'Tidak ada data untuk ditampilkan.']];
+        // 2. Cari Data Total
+        $totalRow = $this->dataForYear->first(fn($i) => in_array(strtolower($i->{$this->genderColumn}), ['jumlah', 'total', 'kabupaten kebumen', 'laki-laki + perempuan']));
+        $totalVal = $totalRow ? $totalRow->value : 0;
+
+        // [MODIFIKASI] Ambil label asli dari database (misal: "Kabupaten Kebumen" atau "Total")
+        // Kalau tidak ketemu, default ke "Total"
+        $labelTotal = $totalRow ? $totalRow->{$this->genderColumn} : 'Total';
+
+        // --- SKENARIO 1: DATA PERSEN (TPT/Kemiskinan) ---
+        // Bar Chart dengan Label "Total"
+        if ($this->isPercent) {
+            return [
+                'type' => 'bar',
+                'title' => "Perbandingan Gender ({$this->year})",
+                // [UBAH DISINI] Ganti 'Rata-rata Kab.' jadi variabel $labelTotal atau string 'Total'
+                'labels' => ['Laki-laki', 'Perempuan', 'Total'],
+                'datasets' => [
+                    [
+                        'label' => $this->unit,
+                        'data' => [$laki, $pr, $totalVal],
+                        'backgroundColor' => ['#36A2EB', '#FF6384', '#9E9E9E']
+                    ]
+                ]
+            ];
         }
 
-        $lakiLaki = $this->latestValues->firstWhere($this->genderColumn, 'Laki-laki')->value ?? 0;
-        $perempuan = $this->latestValues->firstWhere($this->genderColumn, 'Perempuan')->value ?? 0;
+        // --- SKENARIO 2: DATA POPULASI (Jiwa) ---
+        // Pie Chart
+        else {
+            return [
+                'type' => 'pie',
+                'title' => "Komposisi Gender ({$this->year})",
+                'labels' => ['Laki-laki', 'Perempuan'],
+                'datasets' => [
+                    [
+                        'label' => $this->unit,
+                        'data' => [$laki, $pr],
+                        'backgroundColor' => ['#36A2EB', '#FF6384']
+                    ]
+                ]
+            ];
+        }
+    }
+    public function getInsightData(): array
+    {
+        if ($this->dataForYear->isEmpty()) {
+            return [['title' => 'Info', 'value' => '-', 'description' => 'Data Kosong']];
+        }
 
-        // ... (Logika insight lainnya tetap sama, tidak perlu diubah)
-        $insightValue = $lakiLaki > $perempuan ? 'Laki-laki' : 'Perempuan';
-        $selisih = round(abs($lakiLaki - $perempuan), 2);
+        $laki = $this->dataForYear->first(fn($i) => Str::contains(strtolower($i->{$this->genderColumn}), 'laki'))->value ?? 0;
+        $pr   = $this->dataForYear->first(fn($i) => Str::contains(strtolower($i->{$this->genderColumn}), 'perempuan'))->value ?? 0;
 
-        $prevValues = $this->fetchValuesForYear($this->year - 1);
-        $prevLaki = $prevValues->firstWhere($this->genderColumn, 'Laki-laki')->value ?? null;
-        $prevPerempuan = $prevValues->firstWhere($this->genderColumn, 'Perempuan')->value ?? null;
+        $insights = [];
 
-        $persenLaki = ($prevLaki && $lakiLaki) ? round((($lakiLaki - $prevLaki) / $prevLaki) * 100, 2) : null;
-        $persenPerempuan = ($prevPerempuan && $perempuan) ? round((($perempuan - $prevPerempuan) / $perempuan) * 100, 2) : null;
+        // Insight 1: Mana Lebih Tinggi?
+        $labelDominan = ($laki > $pr) ? 'Laki-laki' : 'Perempuan';
+        $selisih = abs($laki - $pr);
 
-        return [
-            [
-                'title' => 'Nilai Tertinggi',
-                'value' => $insightValue,
-                'description' => 'Nilai untuk ' . $insightValue . ' lebih tinggi pada tahun ' . $this->year,
-            ],
-            [
-                'title' => 'Selisih Nilai',
-                'value' => $selisih . " " . $this->unit,
-                'description' => 'Selisih antara Laki-laki dan Perempuan pada tahun ' . $this->year,
-            ],
-            [
-                'title' => 'Perubahan Laki-laki',
-                'value' => $persenLaki !== null ? $persenLaki . '%' : '-',
-                'description' => 'Perubahan nilai Laki-laki dibanding tahun sebelumnya.',
-            ],
-            [
-                'title' => 'Perubahan Perempuan',
-                'value' => $persenPerempuan !== null ? $persenPerempuan . '%' : '-',
-                'description' => 'Perubahan nilai Perempuan dibanding tahun sebelumnya.',
-            ],
+        $desc = $this->isPercent
+            ? "Tingkat {$this->dataset->dataset_name} pada $labelDominan lebih tinggi " . number_format($selisih, 2) . " poin."
+            : "Jumlah $labelDominan lebih banyak " . number_format($selisih) . " jiwa.";
+
+        $insights[] = [
+            'title' => 'Nilai Tertinggi',
+            'value' => $labelDominan,
+            'description' => $desc
         ];
+
+        // Insight 2: Selisih (Gap)
+        $insights[] = [
+            'title' => 'Selisih Gender',
+            'value' => number_format($selisih, 2) . ' ' . $this->unit,
+            'description' => "Jarak (gap) antara Laki-laki dan Perempuan."
+        ];
+
+        return $insights;
     }
 
     public function getHistoryData(): array
     {
-        // Ambil semua data urut tahun lama -> baru
-        $allValues = $this->dataset->values()
-            ->whereIn($this->genderColumn, ['Laki-laki', 'Perempuan'])
-            ->orderBy('year', 'asc')
-            ->get();
+        // Grafik Tren: Jika Persen, tampilkan 3 garis (L, P, Total)
+        // Jika Jiwa, tampilkan 1 garis (Total L+P) atau Stacked
 
-        if ($allValues->isEmpty()) return [];
+        // Sederhana saja: Tampilkan Tren Total dulu
+        $history = $this->dataset->values()
+            ->get()
+            ->groupBy('year')
+            ->map(function ($items) {
+                // Cari row total dulu
+                $total = $items->first(fn($i) => in_array(strtolower($i->{$this->genderColumn}), ['jumlah', 'total', 'kabupaten kebumen']));
+                if ($total) return $total->value;
 
-        // Hitung total (L+P) per tahun
-        $yearlyTotals = $allValues->groupBy('year')->map(function ($items) {
-            return $items->sum('value');
-        });
+                // Kalau gak ada row total, jumlahkan L+P
+                return $items->sum('value');
+            })
+            ->sortKeys();
 
         return [
             'type' => 'line',
-            'title' => 'Tren Total (L+P) dari Tahun ke Tahun',
-            'labels' => $yearlyTotals->keys()->toArray(),
+            'title' => 'Tren Tahunan',
+            'labels' => $history->keys()->toArray(),
             'datasets' => [
                 [
-                    'label' => 'Total Nilai',
-                    'data' => $yearlyTotals->values()->toArray(),
-                ],
-            ],
+                    'label' => 'Total / Rata-rata',
+                    'data' => $history->values()->toArray()
+                ]
+            ]
         ];
     }
 }

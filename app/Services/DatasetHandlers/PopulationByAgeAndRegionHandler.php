@@ -4,176 +4,187 @@ namespace App\Services\DatasetHandlers;
 
 use App\Models\BpsDataset;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class PopulationByAgeAndRegionHandler implements DatasetHandlerInterface
 {
     protected BpsDataset $dataset;
-    protected ?int $year;
+    protected Collection $dataForYear; // Data hanya untuk tahun yang dipilih
+    protected ?int $selectedYear;
+    protected string $mode; // 'region' (Kecamatan) atau 'age' (Umur)
 
-    protected string $regionColumn = 'vervar_label'; // Kolom Kecamatan
-    protected string $ageColumn = 'turvar_label';    // Kolom Umur
+    // Nama Kolom Dinamis
+    protected string $regionColumn = 'vervar_label'; // Default
+    protected string $ageColumn = 'turvar_label';    // Default
 
-    public function __construct(BpsDataset $dataset, $year = null)
+    /**
+     * @param BpsDataset $dataset
+     * @param int|null $year
+     * @param string $mode  Bisa 'region' atau 'age' (dikirim dari Controller)
+     */
+    public function __construct(BpsDataset $dataset, $year = null, $mode = 'region')
     {
         $this->dataset = $dataset;
-        $this->year = $year ?: $dataset->values()->max('year');
+        $this->mode = $mode ?: 'region'; // Default ke region jika null
 
-        // Deteksi Kolom secara Cerdas
-        // Biasanya: Kelompok Umur itu yang ada angka dan strip (0-4, 5-9)
-        $sample = $dataset->values()->first();
-        if ($sample) {
-            // Cek apakah turvar mengandung angka (ciri umur)
-            if (preg_match('/[0-9]/', $sample->turvar_label)) {
-                $this->ageColumn = 'turvar_label';
-                $this->regionColumn = 'vervar_label';
-            } else {
-                $this->ageColumn = 'vervar_label';
-                $this->regionColumn = 'turvar_label';
-            }
+        // 1. Tentukan Tahun (Jika null, ambil tahun terbaru)
+        $this->selectedYear = $year ?: $dataset->values()->max('year');
+
+        // 2. Ambil data HANYA untuk tahun tersebut (Optimasi memori)
+        if ($this->selectedYear) {
+            $this->dataForYear = $dataset->values()->where('year', $this->selectedYear)->get();
+            $this->detectColumns(); // Deteksi mana kolom Kecamatan, mana Umur
+        } else {
+            $this->dataForYear = collect();
         }
     }
 
-    public function getTableData(): array
+    /**
+     * Logika pintar untuk menentukan mana kolom Kecamatan dan mana Umur
+     */
+    private function detectColumns(): void
     {
-        // Tabel menampilkan data mentah lengkap (agar user bisa scroll detail)
-        $query = $this->dataset->values();
-        if ($this->year) $query->where('year', $this->year);
+        if ($this->dataForYear->isEmpty()) return;
 
-        // Urutkan berdasarkan Kecamatan lalu Umur
-        $allData = $query->orderBy($this->regionColumn)->get();
+        // Ambil sampel satu baris
+        $sample = $this->dataForYear->first();
 
-        $rows = $allData->map(function ($item) {
-            return [
-                'Tahun' => $item->year,
-                'Kecamatan' => $item->{$this->regionColumn},
-                'Kelompok Umur' => $item->{$this->ageColumn},
-                'Jiwa' => $item->value
-            ];
-        })->toArray();
+        // Logika sederhana: Cek isi stringnya
+        // Biasanya Kecamatan ada di vervar, tapi kita cek kontennya
+        $vervar = strtolower($sample->vervar_label ?? '');
+        $turvar = strtolower($sample->turvar_label ?? '');
 
-        return [
-            'headers' => ['Tahun', 'Kecamatan', 'Kelompok Umur', 'Jiwa'],
-            'rows' => $rows
-        ];
+        // Cek keywords untuk Age (Umur)
+        $ageKeywords = ['0-4', '5-9', 'umur', 'usia', 'tahunan'];
+
+        $isVervarAge = Str::contains($vervar, $ageKeywords);
+
+        if ($isVervarAge) {
+            $this->ageColumn = 'vervar_label';
+            $this->regionColumn = 'turvar_label';
+        } else {
+            // Default: Vervar adalah Kecamatan
+            $this->regionColumn = 'vervar_label';
+            $this->ageColumn = 'turvar_label';
+        }
     }
 
     public function getChartData(): array
     {
-        // --- SWITCH MODE (Kecamatan vs Umur) ---
-        // Default: region (Kecamatan) karena biasanya user ingin lihat sebaran wilayah
-        $mode = request('mode', 'region');
+        if ($this->dataForYear->isEmpty()) return [];
 
-        $query = $this->dataset->values();
-        if ($this->year) $query->where('year', $this->year);
-        $allData = $query->get();
+        // KATA KUNCI BLACKLIST (Untuk membuang baris Total/Kabupaten)
+        $blacklist = ['jumlah', 'total', 'kabupaten', 'provinsi'];
 
-        if ($mode === 'region') {
-            // === MODE 1: BAR CHART KECAMATAN (Agregat) ===
-            // Jumlahkan semua umur untuk setiap kecamatan
-            $regionStats = $allData->groupBy($this->regionColumn)
-                ->map(function ($items) {
-                    return $items->sum('value');
-                })
-                // Hapus total kabupaten/jumlah agar grafik tidak timpang
-                ->reject(function ($val, $key) {
-                    return in_array(strtolower($key), ['jumlah', 'total', 'kabupaten kebumen']);
-                })
-                ->sortDesc()
-                ->take(10); // Ambil Top 10 saja biar rapi
+        // Tentukan kolom mana yang jadi Grouping Utama berdasarkan Mode
+        $groupByColumn = ($this->mode === 'age') ? $this->ageColumn : $this->regionColumn;
 
-            return [
-                'type' => 'bar',
-                'title' => "10 Kecamatan Terpadat ({$this->year})",
-                'labels' => $regionStats->keys()->toArray(),
-                'datasets' => [
-                    [
-                        'label' => 'Total Penduduk (Pr)',
-                        'data' => $regionStats->values()->toArray()
-                    ]
-                ]
-            ];
-        } else {
-            // === MODE 2: BAR CHART KELOMPOK UMUR (Agregat) ===
-            // Jumlahkan semua kecamatan untuk setiap kelompok umur
-            $ageStats = $allData->groupBy($this->ageColumn)
-                ->map(function ($items) {
-                    return $items->whereNotIn(strtolower($items->first()->{$this->regionColumn} ?? ''), ['jumlah', 'total', 'kabupaten kebumen'])->sum('value');
-                });
+        // 1. Filter Data (Buang Total)
+        $chartData = $this->dataForYear
+            ->reject(function ($item) use ($blacklist, $groupByColumn) {
+                $label = strtolower($item->{$groupByColumn});
+                foreach ($blacklist as $keyword) {
+                    if (Str::contains($label, $keyword)) return true;
+                }
+                return false;
+            })
+            // 2. Grouping
+            ->groupBy($groupByColumn)
+            // 3. Summing (Menjumlahkan)
+            // Jika Mode Region: Jumlahkan semua umur di kecamatan itu
+            // Jika Mode Age: Jumlahkan semua kecamatan di umur itu
+            ->map(function ($group) {
+                return $group->sum('value');
+            });
 
-            // Masalah sorting umur (string): "10-14" bisa muncul sebelum "5-9"
-            // Trik: Gunakan ID asli dari database jika urut, atau biarkan default dulu
-            // (Biasanya BPS inputnya sudah urut ID)
-
-            // Hapus label "Jumlah" jika ada di kolom umur
-            $ageStats = $ageStats->reject(fn($v, $k) => strtolower($k) === 'jumlah');
-
-            return [
-                'type' => 'bar', // Bisa bar atau line
-                'title' => "Distribusi Umur ({$this->year})",
-                'labels' => $ageStats->keys()->toArray(),
-                'datasets' => [
-                    [
-                        'label' => 'Jumlah Jiwa',
-                        'data' => $ageStats->values()->toArray()
-                    ]
-                ]
-            ];
+        // 4. Sorting
+        // Jika Umur, biasanya biarkan default urutan database (agar 0-4, 5-9 urut)
+        // Jika Kecamatan, sort dari nilai tertinggi
+        if ($this->mode === 'region') {
+            $chartData = $chartData->sortDesc();
         }
+
+        return [
+            'type' => 'horizontalBar', // Bar chart mendatar lebih rapi untuk banyak data
+            'title' => ($this->mode === 'age') ? 'Distribusi per Kelompok Umur' : 'Distribusi per Kecamatan',
+            'labels' => $chartData->keys()->values()->all(),
+            'data' => $chartData->values()->all(),
+        ];
     }
 
     public function getInsightData(): array
     {
-        // Insight sederhana total
-        $query = $this->dataset->values();
-        if ($this->year) $query->where('year', $this->year);
-        $allData = $query->get();
+        if ($this->dataForYear->isEmpty()) return [];
 
-        // Cari Total Kabupaten (Biasanya ada baris dengan kecamatan "Kabupaten Kebumen" dan umur "Jumlah")
-        // Atau kita sum manual semua data (hati-hati double counting dengan baris Total)
+        // Gunakan logika grouping yang sama dengan Chart
+        // Agar insight sinkron dengan apa yang dilihat user
+        $chartDataRaw = $this->getChartData();
 
-        // Cara aman: Sum semua data yang kecamatannya BUKAN "Kabupaten Kebumen" dan Umurnya BUKAN "Jumlah"
-        $realData = $allData->filter(function ($item) {
-            return !in_array(strtolower($item->{$this->regionColumn}), ['jumlah', 'total', 'kabupaten kebumen']) &&
-                !in_array(strtolower($item->{$this->ageColumn}), ['jumlah', 'total']);
-        });
+        if (empty($chartDataRaw['data'])) return [];
 
-        $totalJiwa = $realData->sum('value');
-        $avgPerKecamatan = $totalJiwa / 26; // Kebumen ada 26 kecamatan
+        // Konversi kembali ke Collection untuk memudahkan manipulasi
+        $labels = $chartDataRaw['labels'];
+        $values = $chartDataRaw['data'];
 
-        return [
+        // Gabungkan Label dan Value
+        $combined = collect(array_combine($labels, $values));
+
+        $maxVal = $combined->max();
+        $maxKey = $combined->search($maxVal);
+
+        $minVal = $combined->min();
+        $minKey = $combined->search($minVal);
+
+        $totalPopulasi = $combined->sum();
+
+        // Buat kalimat insight dinamis
+        $entityName = ($this->mode === 'age') ? 'Kelompok Umur' : 'Kecamatan';
+
+        $insights = [
             [
-                'title' => 'Total Populasi (Pr)',
-                'value' => number_format($totalJiwa) . " Jiwa",
-                'description' => "Total penduduk perempuan berdasarkan data kecamatan tahun {$this->year}."
+                'title' => "$entityName Tertinggi",
+                'value' => $maxKey,
+                'description' => "$entityName dengan populasi perempuan terbanyak adalah $maxKey (" . number_format($maxVal) . " Jiwa)."
             ],
             [
-                'title' => 'Rata-rata per Kecamatan',
-                'value' => number_format($avgPerKecamatan) . " Jiwa",
-                'description' => "Rata-rata jumlah penduduk perempuan di setiap kecamatan."
+                'title' => "$entityName Terendah",
+                'value' => $minKey,
+                'description' => "$entityName dengan populasi perempuan paling sedikit adalah $minKey (" . number_format($minVal) . " Jiwa)."
             ]
         ];
-    }
 
-    public function getHistoryData(): array
-    {
-        // Ambil data historis dari baris "Kabupaten Kebumen" + "Jumlah" (Totalnya Total)
-        $history = $this->dataset->values()
-            ->where($this->regionColumn, 'Kabupaten Kebumen')
-            ->where($this->ageColumn, 'Jumlah') // Biasanya ada baris rekap ini
-            ->orderBy('year')
-            ->get();
-
-        // Jika tidak ada baris rekap, hitung manual (agak berat query-nya tapi akurat)
-        if ($history->isEmpty()) {
-            // Skip implementasi kompleks, return kosong atau hitung simpel
-            return [];
+        // Tambahkan Insight Proporsi
+        if ($totalPopulasi > 0) {
+            $percentage = ($maxVal / $totalPopulasi) * 100;
+            $insights[] = [
+                'title' => 'Dominasi',
+                'value' => number_format($percentage, 1) . '%',
+                'description' => "Sekitar " . number_format($percentage, 1) . "% dari total data terpusat di $maxKey."
+            ];
         }
 
+        return $insights;
+    }
+
+    public function getTableData(): array
+    {
+        // Untuk Tabel, kita tampilkan Matrix (Pivot)
+        // Baris: Kecamatan, Kolom: Kelompok Umur (atau sebaliknya)
+        // Tapi format tabel Anda sebelumnya simple list. 
+        // Mari kita buat format List standar tapi difilter tahun.
+
+        $rows = $this->dataForYear->map(function ($item) {
+            return [
+                'Tahun' => $item->year,
+                'Kecamatan' => $item->{$this->regionColumn},
+                'Kelompok Umur' => $item->{$this->ageColumn},
+                'Jiwa' => number_format($item->value)
+            ];
+        });
+
         return [
-            'type' => 'line',
-            'title' => 'Tren Total Populasi',
-            'labels' => $history->pluck('year')->toArray(),
-            'datasets' => [['label' => 'Total Jiwa', 'data' => $history->pluck('value')->toArray()]]
+            'headers' => ['Tahun', 'Kecamatan', 'Kelompok Umur', 'Jiwa'],
+            'rows' => $rows
         ];
     }
 }

@@ -10,83 +10,113 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 {
     protected BpsDataset $dataset;
     protected ?int $year;
-    protected string $categoryColumn;
-    protected string $primaryUnit = 'Nilai';
+
+    // Settingan Kunci:
+    protected string $rowLabelColumn = 'turvar_label'; // Baris = Kecamatan
+    protected string $pivotColumn = 'vervar_label';    // Kolom = Dusun, RW, RT
+    protected bool $isPercentage = false;
+    protected array $excludedLabels = ['jumlah', 'total', 'kabupaten kebumen', 'jawa tengah', 'indonesia'];
 
     public function __construct(BpsDataset $dataset, $year = null)
     {
         $this->dataset = $dataset;
-        // Gunakan tahun dari request, atau default ke tahun terbaru
         $this->year = $year ?: $dataset->values()->max('year');
 
-        // 1. Deteksi kolom kategori (turvar vs vervar)
-        $sample = $dataset->values()->first();
-        if ($sample) {
-            $vervarCount = $dataset->values()->pluck('vervar_label')->unique()->count();
-            $turvarCount = $dataset->values()->pluck('turvar_label')->unique()->count();
-            // Ambil kolom yang variasi datanya lebih banyak sebagai kategori
-            $this->categoryColumn = ($turvarCount > $vervarCount) ? 'turvar_label' : 'vervar_label';
-        } else {
-            $this->categoryColumn = 'turvar_label';
-        }
+        // 1. Definisikan Default Dulu
+        $this->rowLabelColumn = 'vervar_label';
+        $this->pivotColumn = 'turvar_label';
 
-        // 2. Deteksi Unit Utama berdasarkan Judul Dataset
-        // Jika judul mengandung "Persentase" atau "Distribusi", prioritaskan unit Persen
-        if (
-            Str::contains(strtolower($dataset->dataset_name), 'persentase') ||
-            Str::contains(strtolower($dataset->dataset_name), 'distribusi')
-        ) {
-            $this->primaryUnit = 'Persen';
-        } else {
-            $this->primaryUnit = 'Nilai';
+        if ($this->year) {
+            // 2. Deteksi Unit (Persen atau Nilai)
+            $sample = $dataset->values()->where('year', $this->year)->first();
+            $this->isPercentage = false;
+
+            if ($sample) {
+                // Deteksi Persen
+                if (
+                    Str::contains(strtolower($sample->unit), ['%', 'persen']) ||
+                    Str::contains(strtolower($dataset->dataset_name), ['persentase', 'tingkat'])
+                ) {
+                    $this->isPercentage = true;
+                }
+
+                // --- LOGIKA DETEKSI PIVOT (ROW vs COL) ---
+                // Kita hitung variasi datanya
+                $allData = $dataset->values()->where('year', $this->year);
+                $vervarCount = $allData->pluck('vervar_label')->unique()->count();
+                $turvarCount = $allData->pluck('turvar_label')->unique()->count();
+
+                // Kolom dengan variasi LEBIH BANYAK = Baris (Kecamatan)
+                // Kolom dengan variasi LEBIH SEDIKIT = Header Kolom (Dusun/RW)
+                if ($vervarCount >= $turvarCount) {
+                    $this->rowLabelColumn = 'vervar_label'; // Kecamatan jadi Baris
+                    $this->pivotColumn = 'turvar_label';    // Jenis jadi Kolom
+                } else {
+                    $this->rowLabelColumn = 'turvar_label';
+                    $this->pivotColumn = 'vervar_label';
+                }
+            }
         }
     }
 
     public function getTableData(): array
     {
-        // Query Dasar
+        // 1. Ambil Data
         $query = $this->dataset->values();
-
-        // Hormati filter tahun (jika ada)
         if ($this->year) {
             $query->where('year', $this->year);
         }
+        $data = $query->get();
 
-        // Ambil data (Urutkan Tahun Desc, Kategori Asc)
-        $allData = $query->orderBy('year', 'desc')
-            ->orderBy($this->categoryColumn, 'asc')
-            ->get();
+        if ($data->isEmpty()) return ['headers' => [], 'rows' => []];
 
-        if ($allData->isEmpty()) return ['headers' => [], 'rows' => []];
+        // 2. Tentukan Header Kolom (Dusun, RW, RT)
+        // Kita ambil isi dari 'vervar_label'
+        $pivotHeaders = $data->pluck($this->pivotColumn)
+            ->unique()
+            ->filter(fn($val) => !empty($val) && strtolower($val) !== 'total')
+            ->values()
+            ->toArray();
 
-        // Deteksi Unit yang tersedia
-        $units = $allData->pluck('unit')->unique()->filter()->values()->toArray();
-        if (empty($units)) $units = ['Nilai'];
+        // Fallback jika datanya simple (tidak punya vervar)
+        if (empty($pivotHeaders)) {
+            $pivotHeaders = ['Nilai'];
+        }
 
-        // Header Tabel: Tahun, Kategori, [Unit1], [Unit2]...
-        $headers = array_merge(['Tahun', 'Kategori'], $units);
+        // 3. Susun Header Final [Tahun, Kecamatan, Dusun, RW, RT]
+        // Kita ubah label 'Kategori' jadi 'Kecamatan / Uraian' agar lebih jelas
+        $headers = array_merge(['Tahun', 'Kecamatan'], $pivotHeaders);
 
+        // 4. Grouping Data Berdasarkan Baris (Kecamatan/turvar)
+        $grouped = $data->groupBy($this->rowLabelColumn);
         $rows = [];
-        $groupedByYear = $allData->groupBy('year');
 
-        foreach ($groupedByYear as $year => $itemsInYear) {
-            $groupedByCategory = $itemsInYear->groupBy($this->categoryColumn);
+        foreach ($grouped as $rowLabel => $items) {
+            // Abaikan baris "Total" atau "Jumlah" di tabel agar tidak double dengan footer (opsional)
+            // if (in_array(strtolower($rowLabel), ['jumlah', 'total'])) continue; 
 
-            foreach ($groupedByCategory as $category => $items) {
-                $row = ['Tahun' => $year, 'Kategori' => $category];
+            $row = [
+                'Tahun' => $this->year,
+                'Kecamatan' => $rowLabel, // Key ini harus sama dengan header di atas
+            ];
 
-                foreach ($units as $unit) {
-                    // Cari item yang cocok dengan unit ini
-                    // (Logika: Cocokkan string unit, atau fallback ke 'Nilai')
-                    $item = $items->first(function ($val) use ($unit) {
-                        return strtolower($val->unit) == strtolower($unit)
-                            || ($unit == 'Nilai');
-                    });
+            foreach ($pivotHeaders as $header) {
+                // Cari nilai yang cocok:
+                // Baris = Kecamatan ini (sudah di-filter lewat groupBy)
+                // Kolom = Header ini (Dusun/RW/RT)
+                $foundItem = $items->first(function ($item) use ($header) {
+                    $itemCol = $item->{$this->pivotColumn} ?? 'Nilai';
+                    return trim($itemCol) === trim($header)
+                        || ($header === 'Nilai');
+                });
 
-                    $row[$unit] = $item ? $item->value : null;
-                }
-                $rows[] = $row;
+                // Ambil nilainya
+                $val = $foundItem ? $foundItem->value : 0;
+
+                // Pastikan format Float agar dibaca angka oleh Android
+                $row[$header] = (float) $val;
             }
+            $rows[] = $row;
         }
 
         return ['headers' => $headers, 'rows' => $rows];
@@ -94,142 +124,116 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 
     public function getChartData(): array
     {
-        // 1. Ambil data HANYA untuk tahun terpilih (Snapshot)
-        $query = $this->dataset->values();
-        if ($this->year) $query->where('year', $this->year);
-        $allItems = $query->get();
+        // Gunakan logika table data agar konsisten
+        $tableData = $this->getTableData();
+        $headers = $tableData['headers'];
+        $rows = $tableData['rows'];
 
-        // 2. FILTER DATA UNTUK GRAFIK
-        $chartDataRaw = $allItems->filter(function ($item) {
-            $kategori = strtolower($item->{$this->categoryColumn});
-            $unit = strtolower($item->unit);
+        if (empty($rows)) return [];
 
-            // ATURAN A: BUANG KATEGORI "JUMLAH" / "TOTAL" 
-            // (Agar grafik perbandingan proporsional)
-            if (in_array($kategori, ['jumlah', 'total'])) {
-                return false;
+        // 1. Label Sumbu X (Kecamatan)
+        $labels = [];
+        $validIndices = [];
+
+        foreach ($rows as $index => $row) {
+            // Ambil nama kecamatan dari key 'Kecamatan'
+            $catName = $row['Kecamatan'];
+
+            // Filter "Kabupaten Kebumen" atau "Total" agar grafik tidak jomplang
+            if (!in_array(strtolower($catName), $this->excludedLabels)) {
+                $labels[] = $catName;
+                $validIndices[] = $index;
             }
-
-            // ATURAN B: Pilih Unit yang sesuai dengan Judul
-            if ($this->primaryUnit === 'Persen') {
-                return $unit === 'persen' || $unit === '%';
-            } else {
-                // Ambil yang BUKAN persen
-                return $unit !== 'persen' && $unit !== '%';
-            }
-        });
-
-        // Fallback: Jika filter unit bikin kosong (misal unitnya null semua), 
-        // ambil saja semuanya (kecuali Jumlah)
-        if ($chartDataRaw->isEmpty()) {
-            $chartDataRaw = $allItems->filter(fn($i) => !in_array(strtolower($i->{$this->categoryColumn}), ['jumlah', 'total']));
         }
 
-        // 3. TENTUKAN TIPE CHART
-        $chartType = ($this->primaryUnit === 'Persen') ? 'pie' : 'bar';
+        // 2. Dataset (Dusun, RW, RT)
+        // Loop mulai index 2 (karena index 0=Tahun, 1=Kecamatan)
+        $datasets = [];
+        for ($i = 2; $i < count($headers); $i++) {
+            $headerName = $headers[$i];
+            $dataValues = [];
 
-        // Urutkan data dari besar ke kecil (Biar grafik rapi)
-        $chartDataSorted = $chartDataRaw->sortByDesc('value');
+            foreach ($validIndices as $idx) {
+                $dataValues[] = $rows[$idx][$headerName];
+            }
+
+            $datasets[] = [
+                'label' => $headerName,
+                'data' => $dataValues,
+            ];
+        }
 
         return [
-            'type' => $chartType, // Dinamis: pie atau bar
+            'type' => 'bar', // Bar chart paling cocok untuk perbandingan wilayah
             'title' => $this->dataset->dataset_name,
-            'labels' => $chartDataSorted->pluck($this->categoryColumn)->toArray(),
-            'datasets' => [
-                [
-                    'label' => $this->primaryUnit === 'Nilai' ? 'Jumlah' : $this->primaryUnit,
-                    'data' => $chartDataSorted->pluck('value')->values()->toArray(),
-                ]
-            ],
-            // Data mentah flat (opsional, untuk kompatibilitas)
-            'data' => $chartDataSorted->pluck('value')->values()->toArray()
+            'labels' => $labels,
+            'datasets' => $datasets,
         ];
     }
 
     public function getInsightData(): array
     {
-        // Gunakan data chart yang sudah bersih (tanpa "Jumlah")
+        // Logika sederhana: Ambil kolom data pertama (misal: Dusun) untuk insight
         $chartData = $this->getChartData();
+        if (empty($chartData['datasets'])) return [];
+
+        $dataset = $chartData['datasets'][0]; // Ambil dataset pertama
+        $values = $dataset['data'];
         $labels = $chartData['labels'];
-        $values = $chartData['datasets'][0]['data'] ?? [];
 
-        if (empty($values)) {
-            return [['title' => 'Info', 'value' => '-', 'description' => 'Data tidak tersedia.']];
-        }
+        if (empty($values)) return [];
 
-        // Cari Nilai Tertinggi (Max)
         $maxVal = max($values);
         $maxIndex = array_search($maxVal, $values);
         $maxLabel = $labels[$maxIndex];
 
-        // Cari Nilai Terendah (Min)
         $minVal = min($values);
         $minIndex = array_search($minVal, $values);
         $minLabel = $labels[$minIndex];
 
-        $unitLabel = ($this->primaryUnit === 'Persen') ? '%' : '';
-
-        $insights = [];
-
-        // Insight 1: Dominan
-        $insights[] = [
-            'title' => 'Dominan',
-            'value' => $maxLabel,
-            'description' => "Kategori tertinggi adalah $maxLabel dengan nilai " . number_format($maxVal, 2) . $unitLabel,
-        ];
-
-        // Insight 2: Terendah (Jika ada lebih dari 1 kategori)
-        if (count($values) > 1) {
-            $insights[] = [
+        return [
+            [
+                'title' => 'Tertinggi',
+                'value' => $maxLabel,
+                'description' => "Wilayah dengan {$dataset['label']} terbanyak adalah $maxLabel ($maxVal)"
+            ],
+            [
                 'title' => 'Terendah',
                 'value' => $minLabel,
-                'description' => "Kategori terendah adalah $minLabel dengan nilai " . number_format($minVal, 2) . $unitLabel,
-            ];
-        }
-
-        return $insights;
+                'description' => "Wilayah dengan {$dataset['label']} terendah adalah $minLabel ($minVal)"
+            ]
+        ];
     }
 
     public function getHistoryData(): array
     {
-        // Grafik Tren Total dari Tahun ke Tahun
+        // History Data (Tren Tahun ke Tahun)
+        // Kita ambil Total per Tahun
+        $history = $this->dataset->values()
+            ->get()
+            ->groupBy('year')
+            ->map(function ($items) {
+                // Prioritaskan baris "Kabupaten Kebumen" atau "Jumlah" jika ada
+                $totalRow = $items->first(function ($i) {
+                    return in_array(strtolower($i->{$this->rowLabelColumn}), ['jumlah', 'total', 'kabupaten kebumen']);
+                });
 
-        // 1. Coba cari baris dengan kategori "Jumlah" atau "Total" di database
-        $historyData = $this->dataset->values()
-            ->where(function ($q) {
-                $q->where($this->categoryColumn, 'Jumlah')
-                    ->orWhere($this->categoryColumn, 'Total');
+                if ($totalRow) return $totalRow->value;
+
+                // Jika persen, rata-rata. Jika nilai, sum.
+                return $this->isPercentage ? $items->avg('value') : $items->sum('value');
             })
-            ->orderBy('year')
-            ->get();
-
-        // 2. Jika tidak ada baris "Jumlah", hitung manual (Sum)
-        if ($historyData->isEmpty()) {
-            $historyData = $this->dataset->values()
-                ->where('unit', '!=', 'Persen') // Jangan jumlahkan persen
-                ->where('unit', '!=', '%')
-                ->get()
-                ->groupBy('year')
-                ->map(function ($items) {
-                    return (object)[
-                        'year' => $items->first()->year,
-                        'value' => $items->sum('value')
-                    ];
-                })
-                ->sortBy('year')
-                ->values();
-        }
+            ->sortKeys();
 
         return [
             'type' => 'line',
-            'title' => 'Tren Total',
-            'labels' => $historyData->pluck('year')->toArray(),
-            'datasets' => [
-                [
-                    'label' => 'Total',
-                    'data' => $historyData->pluck('value')->toArray()
-                ]
-            ]
+            'title' => 'Tren Tahunan',
+            'labels' => $history->keys()->toArray(),
+            'datasets' => [[
+                'label' => 'Total',
+                'data' => $history->values()->toArray(),
+                'borderColor' => '#3b82f6',
+            ]]
         ];
     }
 }
