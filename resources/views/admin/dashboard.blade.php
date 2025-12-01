@@ -135,13 +135,17 @@
                     </div>
                 @endauth
 
-                {{-- Statistics Cards --}}
+               {{-- Statistics Cards --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    
                     {{-- Dataset Count --}}
                     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div class="flex items-center gap-4">
                             <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md">
-                                <x-heroicon-o-circle-stack class="w-8 h-8" />
+                                {{-- Icon: Circle Stack --}}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                </svg>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-500 mb-1">Dataset Tersimpan</p>
@@ -155,8 +159,9 @@
                     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div class="flex items-center gap-4">
                             <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
-                                <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                {{-- Icon: Chart Bar / Trending Up --}}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
@@ -181,7 +186,10 @@
                     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div class="flex items-start gap-4">
                             <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
-                                <x-heroicon-o-cloud-arrow-down class="w-8 h-8" />
+                                {{-- Icon: Cloud Arrow Down --}}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75v6.75m0 0-3-3m3 3 3-3m-8.25 6a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                                </svg>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-500 mb-1">Sinkronisasi Terakhir</p>
@@ -191,7 +199,10 @@
                                 @can('run sync')
                                     <button id="sync-btn" type="button"
                                         class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg shadow hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <x-heroicon-s-arrow-path class="w-4 h-4 mr-2" />
+                                        {{-- Icon: Refresh / Sync --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 mr-2">
+                                            <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clip-rule="evenodd" />
+                                        </svg>
                                         Sinkronisasi Sekarang
                                     </button>
                                     <div id="sync-progress" class="mt-2 text-xs text-gray-600 hidden"></div>
@@ -200,7 +211,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Dataset Table Section --}}
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     {{-- Toolbar --}}
