@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DashboardContentController;
+USE App\Http\Controllers\Admin\ScrapeController;
 use App\Http\Controllers\Admin\SyncController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SyncLogController;
@@ -49,6 +50,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
         // Resource Konten
         Route::resource('contents', DashboardContentController::class);
+
+        Route::post('/contents/scrape', [ScrapeController::class, 'scrape'])
+            ->name('contents.scrape');
 
         // Kelompok Rute Dataset
         Route::prefix('datasets')->name('datasets.')->group(function () {

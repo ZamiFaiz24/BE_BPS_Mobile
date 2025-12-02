@@ -38,6 +38,16 @@
                             @endif
                         @endforeach
 
+                        {{-- 0. INPUT URL SCRAPE --}}
+                        <div class="mb-6">
+                            <label for="scrape_url" class="block text-sm font-medium text-gray-700 mb-1">Ambil Konten dari URL BPS</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="scrape_url" class="w-full border rounded-lg px-3 py-2" placeholder="https://kebumenkab.bps.go.id/..." />
+                                <button type="button" id="btn-scrape" class="px-4 py-2 bg-[#0093DD] text-white rounded-lg">Ambil Konten</button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Masukkan URL detail publikasi/berita/infografik BPS, lalu klik Ambil Konten.</p>
+                        </div>
+
                         {{-- 1. PILIH TIPE KONTEN (Wajib) --}}
                         <div class="mb-6 border-b pb-6">
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Tipe Konten <span class="text-red-500">*</span></label>
@@ -194,8 +204,112 @@
                             </div>
 
                         </div>
-                    </form>
 
+                    </form>
+                    <script>
+                    document.getElementById('btn-scrape').onclick = async function() {
+                        // 1. Ambil URL
+                        const urlInput = document.getElementById('scrape_url');
+                        const url = urlInput.value;
+                        
+                        if (!url) {
+                            alert('Masukkan URL BPS terlebih dahulu!');
+                            urlInput.focus();
+                            return;
+                        }
+
+                        // 2. UI Loading State
+                        const btn = this;
+                        const originalText = btn.innerText;
+                        btn.disabled = true;
+                        btn.innerText = 'Sedang Mengambil...';
+                        btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                        try {
+                            // 3. Request ke Backend
+                            const res = await fetch("{{ route('admin.contents.scrape') }}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({ url })
+                            });
+
+                            const result = await res.json();
+
+                            if (result.success && result.data) {
+                                const data = result.data;
+
+                                // Auto-fill Title
+                                if (data.title && document.getElementById('title')) {
+                                    document.getElementById('title').value = data.title;
+                                }
+
+                                // Auto-fill Category
+                                if (data.category && document.getElementById('category')) {
+                                    document.getElementById('category').value = data.category;
+                                }
+
+                                // Auto-fill Date (prefer date_iso)
+                                if (document.getElementById('publish_date')) {
+                                    const dateValue = data.date_iso || data.date || '';
+                                    document.getElementById('publish_date').value = dateValue;
+                                }
+
+                                // Auto-fill Image URL
+                                if (data.image && document.getElementById('image_url')) {
+                                    document.getElementById('image_url').value = data.image;
+                                }
+
+                                // Auto-fill Link
+                                if (data.url && document.getElementById('link')) {
+                                    document.getElementById('link').value = data.url;
+                                }
+
+                                // Detect & Set Type
+                                const typeEl = document.getElementById('type');
+                                const typeMapping = {
+                                    'pressrelease': 'press_release',
+                                    'news': 'news',
+                                    'publication': 'publication',
+                                    'infographic': 'infographic'
+                                };
+                                const detectedType = typeMapping[data.type] || '';
+                                
+                                if (detectedType && typeEl) {
+                                    typeEl.value = detectedType;
+                                    typeEl.dispatchEvent(new Event('change'));
+                                }
+
+                                // Auto-fill Content (wait for Alpine to render conditional fields)
+                                setTimeout(() => {
+                                    if (detectedType === 'publication') {
+                                        const abstractEl = document.getElementById('abstract');
+                                        if (abstractEl) abstractEl.value = data.content || data.description || '';
+                                    } else {
+                                        const descEl = document.getElementById('description');
+                                        if (descEl) descEl.value = data.content || data.description || '';
+                                    }
+                                }, 150);
+
+                                alert('✅ Data berhasil diambil!\nSilakan edit jika perlu, lalu klik Simpan Konten.');
+
+                            } else {
+                                alert('❌ Gagal: ' + (result.message || 'Error tidak diketahui'));
+                            }
+
+                        } catch (e) {
+                            console.error(e);
+                            alert('Terjadi kesalahan koneksi: ' + e.message);
+                        } finally {
+                            // 4. Reset Button
+                            btn.disabled = false;
+                            btn.innerText = originalText;
+                            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                        }
+                    };
+                    </script>
                 </div>
             </div>
         </div>

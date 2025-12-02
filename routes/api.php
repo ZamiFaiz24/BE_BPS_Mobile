@@ -6,6 +6,7 @@ use App\Http\Controllers\API\BpsDatasetController;
 use App\Http\Controllers\API\BpsSyncController;
 use App\Http\Controllers\API\BpsDataController;
 use App\Http\Controllers\API\BpsContentController;
+use App\Http\Controllers\Admin\ScrapeController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -42,4 +43,16 @@ Route::prefix('datasets')->group(function () {
     Route::get('{dataset}', [BpsDatasetController::class, 'show']);
     Route::get('{dataset}/history', [BpsDatasetController::class, 'history']);
     Route::get('{dataset}/insights', [BpsDatasetController::class, 'insights']);
+});
+
+// Route untuk testing scraper (Admin only - tambahkan middleware auth nanti)
+Route::prefix('admin/scrape')->group(function () {
+    // Test scraping dengan auto-detect tipe
+    Route::match(['get', 'post'], '/test', [ScrapeController::class, 'test']);
+
+    // Scrape per tipe konten
+    Route::post('/publication', [ScrapeController::class, 'scrapePublication']);
+    Route::post('/pressrelease', [ScrapeController::class, 'scrapePressRelease']);
+    Route::post('/news', [ScrapeController::class, 'scrapeNews']);
+    Route::post('/infographic', [ScrapeController::class, 'scrapeInfographic']);
 });

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use App\Models\News;
 use App\Models\PressRelease;
 use App\Models\Publication;
 use App\Models\Infographic;
+use Illuminate\Support\Facades\Log;
 
 class DashboardContentController extends Controller
 {
@@ -392,9 +394,21 @@ class DashboardContentController extends Controller
             if ($request->has('return_per_page')) $queryParams['per_page'] = $request->return_per_page;
 
             return redirect()->route('admin.contents.index', $queryParams)->with('success', 'Konten baru berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            // Log error jika perlu: Log::error($e->getMessage());
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Deteksi error duplicate entry (MySQL error code 23000)
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                return back()->withInput()->withErrors(['link' => 'URL ini sudah ada di database. Silakan gunakan URL yang berbeda.']);
+            }
+
+            Log::error('Error menyimpan konten', [
+                'type' => $type,
+                'error' => $e->getMessage()
+            ]);
+
             return back()->withInput()->withErrors(['error' => 'Gagal menyimpan konten: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            Log::error('Unexpected error', ['error' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
 }
