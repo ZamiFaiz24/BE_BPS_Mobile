@@ -4,10 +4,11 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DashboardContentController;
-USE App\Http\Controllers\Admin\ScrapeController;
+use App\Http\Controllers\Admin\ScrapeController;
 use App\Http\Controllers\Admin\SyncController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SyncLogController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
@@ -17,9 +18,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Ini adalah route dashboard BREEZE default (jika ada user non-admin)
+// Ini adalah route dashboard BREEZE default (redirect ke admin dashboard)
 Route::get('/dashboard', function () {
-    return view('admin.dashboard');
+    return redirect()->route('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Rute untuk Halaman PROFIL (bisa diakses semua user)
@@ -90,6 +91,16 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('logs', [SyncLogController::class, 'index'])->name('logs.index');
         Route::get('logs/{log}', [SyncLogController::class, 'show'])->name('logs.show');
         Route::get('/sync/status/{log}', [SyncLogController::class, 'checkStatus'])->name('sync.status');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | GRUP 3: KELOLA USER (Akses: HANYA Superadmin)
+    |--------------------------------------------------------------------------
+    | Rute untuk CRUD user, hanya bisa diakses oleh superadmin
+    */
+    Route::middleware(['can:manage users'])->group(function () {
+        Route::resource('users', UserController::class);
     });
 });
 

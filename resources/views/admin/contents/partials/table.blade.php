@@ -78,6 +78,7 @@
                             <form action="{{ route('admin.contents.destroy', $content->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus konten ini?');">
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="type" value="{{ $content->type }}">
                                 <button type="submit" class="text-[#EB891C] hover:text-red-700 inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-gray-50 transition" title="Hapus">
                                     <x-heroicon-o-trash class="w-5 h-5" />
                                 </button>

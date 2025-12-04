@@ -47,6 +47,15 @@
                         {{ __('Pengaturan') }}
                     </x-nav-link>                 
                     @endcan
+
+                    {{-- Menu Kelola User: HANYA Superadmin --}}
+                    @if(auth()->user()->isSuperadmin())
+                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')"
+                        class="{{ $baseClass }} {{ request()->routeIs('admin.users.*') ? $activeClass : $inactiveClass }}">
+                        <x-heroicon-o-users class="w-5 h-5" />
+                        {{ __('Kelola User') }}
+                    </x-nav-link>
+                    @endif
                 </div>
 
                 <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -122,6 +131,14 @@
                 <x-heroicon-o-cog-6-tooth class="w-5 h-5" />
                 {{ __('Pengaturan') }}
             </x-responsive-nav-link>
+
+            @if(auth()->user()->isSuperadmin())
+            <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')"
+                class="{{ request()->routeIs('admin.users.*') ? $mobileActive : $mobileInactive }}">
+                <x-heroicon-o-users class="w-5 h-5" />
+                {{ __('Kelola User') }}
+            </x-responsive-nav-link>
+            @endif
         </div>
 
         <div class="pt-4 pb-1 border-t border-[#0093DD]/10">
