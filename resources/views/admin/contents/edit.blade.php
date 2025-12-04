@@ -192,6 +192,14 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD] transition"
                                 placeholder="Masukkan abstraksi publikasi...">{{ old('abstract', $content->abstract_text) }}</textarea>
                         </div>
+                        
+                        <div class="mb-4">
+                            <label for="pdf_url" class="block text-sm font-medium text-gray-700 mb-1">Link PDF Publikasi</label>
+                            <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url', $content->pdf_url ?? '') }}"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD] transition"
+                                placeholder="https://example.com/file.pdf">
+                            <p class="text-xs text-gray-500 mt-1">Link direct ke file PDF publikasi (opsional).</p>
+                        </div>
                         @endif
 
                         {{-- 8. DESKRIPSI / ISI KONTEN (Untuk Berita, Siaran Pers, Infografis) --}}

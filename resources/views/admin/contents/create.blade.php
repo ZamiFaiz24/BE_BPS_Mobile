@@ -180,6 +180,16 @@
                             </div>
 
                             {{-- 
+                                KONDISIONAL: PDF URL (Hanya untuk Publikasi) 
+                            --}}
+                            <div x-show="type === 'publication'">
+                                <label for="pdf_url" class="block text-sm font-medium text-gray-700 mb-1">Link PDF Publikasi</label>
+                                <input type="url" name="pdf_url" id="pdf_url" value="{{ old('pdf_url') }}" placeholder="https://example.com/file.pdf"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#0093DD] focus:border-[#0093DD]">
+                                <p class="text-xs text-gray-500 mt-1">Link direct ke file PDF publikasi (opsional).</p>
+                            </div>
+
+                            {{-- 
                                 KONDISIONAL: Deskripsi (Untuk Berita, Siaran Pers, Infografik) 
                             --}}
                             <div x-show="type !== 'publication'">
@@ -287,6 +297,10 @@
                                     if (detectedType === 'publication') {
                                         const abstractEl = document.getElementById('abstract');
                                         if (abstractEl) abstractEl.value = data.content || data.description || '';
+                                        
+                                        // Auto-fill PDF URL untuk publikasi
+                                        const pdfUrlEl = document.getElementById('pdf_url');
+                                        if (pdfUrlEl && data.pdf_url) pdfUrlEl.value = data.pdf_url;
                                     } else {
                                         const descEl = document.getElementById('description');
                                         if (descEl) descEl.value = data.content || data.description || '';

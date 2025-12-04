@@ -52,22 +52,107 @@ class ScrapeController extends Controller
 
         Log::info('Running scraper', ['command' => $cmd, 'url' => $url]);
 
-        $output = shell_exec($cmd);
-        if (!$output) {
-            Log::error('Python script no output', ['command' => $cmd]);
+        // Gunakan exec() dengan output array untuk mendapat semua baris output
+        $outputLines = [];
+        $returnCode = 0;
+        exec($cmd, $outputLines, $returnCode);
+
+        // Gabungkan semua baris output
+        $output = implode("\n", $outputLines);
+
+        Log::info('Python execution completed', [
+            'return_code' => $returnCode,
+            'lines_count' => count($outputLines),
+            'first_line' => $outputLines[0] ?? 'EMPTY',
+            'last_line' => $outputLines[count($outputLines) - 1] ?? 'EMPTY'
+        ]);
+
+        if (!$output || count($outputLines) === 0) {
+            Log::error('Python script no output', [
+                'command' => $cmd,
+                'return_code' => $returnCode
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Python script tidak menghasilkan output. Pastikan Python terinstall dan script berfungsi dengan baik.'
+                'message' => 'Python script tidak menghasilkan output. Pastikan Python terinstall dan Playwright sudah disetup. Return code: ' . $returnCode
             ], 500);
         }
 
-        $json = json_decode($output, true);
+        // Log raw output untuk debugging
+        Log::info('Python raw output', ['output' => $output]);
 
-        if (!$json) {
+        // Coba ambil baris terakhir yang berisi JSON (ignore error messages)
+        $lines = explode("\n", trim($output));
+        $jsonLine = null;
+
+        // Cari dari belakang untuk mendapatkan baris JSON yang valid
+        for ($i = count($lines) - 1; $i >= 0; $i--) {
+            $line = trim($lines[$i]);
+            if (!$line) continue;
+
+            // Cek apakah ini baris JSON yang valid (dimulai dengan { atau [)
+            if (isset($line[0]) && ($line[0] === '{' || $line[0] === '[')) {
+                // Validasi lebih lanjut: coba decode
+                $testDecode = json_decode($line, true);
+                if ($testDecode !== null) {
+                    $jsonLine = $line;
+                    break;
+                }
+            }
+        }
+
+        if (!$jsonLine) {
+            Log::error('No valid JSON line found', [
+                'raw_output' => $output,
+                'lines_count' => count($lines),
+                'last_5_lines' => array_slice($lines, -5)
+            ]);
+
+            // Cek apakah ada error umum
+            if (stripos($output, 'playwright') !== false || stripos($output, 'ModuleNotFoundError') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Playwright belum terinstall. Jalankan: pip install playwright && playwright install chromium'
+                ], 500);
+            }
+
+            if (stripos($output, 'TimeoutError') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Timeout saat mengakses halaman. Coba lagi atau periksa koneksi internet.'
+                ], 500);
+            }
+
+            if (stripos($output, 'Error') !== false || stripos($output, 'Exception') !== false) {
+                // Ambil baris error
+                $errorLines = array_filter($lines, function ($line) {
+                    return stripos($line, 'Error') !== false || stripos($line, 'Exception') !== false;
+                });
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error dari Python scraper: ' . implode(' | ', array_slice($errorLines, 0, 3)),
+                    'raw_output' => substr($output, 0, 2000)
+                ], 500);
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Output Python tidak valid JSON',
-                'raw_output' => $output
+                'message' => 'Output Python tidak valid JSON. Periksa log untuk detail lengkap.',
+                'raw_output' => substr($output, 0, 1000)
+            ], 500);
+        }
+
+        $json = json_decode($jsonLine, true);
+
+        if (!$json) {
+            Log::error('JSON decode failed', ['json_line' => $jsonLine, 'decode_error' => json_last_error_msg()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal decode JSON: ' . json_last_error_msg(),
+                'raw_output' => substr($output, 0, 1000)
             ], 500);
         }
 

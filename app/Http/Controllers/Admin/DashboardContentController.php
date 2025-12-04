@@ -11,6 +11,7 @@ use App\Models\PressRelease;
 use App\Models\Publication;
 use App\Models\Infographic;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class DashboardContentController extends Controller
 {
@@ -324,6 +325,39 @@ class DashboardContentController extends Controller
 
         $type = $request->input('type');
 
+        // 2. Cek duplikasi link berdasarkan tipe konten
+        if ($request->link) {
+            $exists = false;
+            $existingRecord = null;
+
+            switch ($type) {
+                case 'news':
+                    $existingRecord = \App\Models\News::where('link', $request->link)->first();
+                    break;
+                case 'press_release':
+                    $existingRecord = \App\Models\PressRelease::where('link', $request->link)->first();
+                    break;
+                case 'publication':
+                    $existingRecord = \App\Models\Publication::where('link', $request->link)->first();
+                    break;
+                case 'infographic':
+                    $existingRecord = \App\Models\Infographic::where('link', $request->link)->first();
+                    break;
+            }
+
+            if ($existingRecord) {
+                Log::warning('Duplicate link detected', [
+                    'type' => $type,
+                    'link' => $request->link,
+                    'existing_id' => $existingRecord->id,
+                    'existing_title' => $existingRecord->title,
+                    'new_title' => $request->title
+                ]);
+
+                return back()->withInput()->withErrors(['link' => 'URL ini sudah ada di database (ID: ' . $existingRecord->id . ', Judul: "' . Str::limit($existingRecord->title, 50) . '"). Silakan edit konten yang sudah ada atau gunakan URL yang berbeda.']);
+            }
+        }
+
         // 2. Handle Image Upload atau URL
         $imageUrl = $request->image_url;
 
@@ -364,11 +398,12 @@ class DashboardContentController extends Controller
                 case 'publication':
                     Publication::create([
                         'title' => $request->title,
-                        'category' => $request->category,
+                        'category' => $request->category ?? null,
                         'release_date' => $request->publish_date, // Mapping: publish_date -> release_date
                         'link' => $request->link,
                         'cover_url' => $imageUrl, // Mapping: image_url -> cover_url
-                        'abstract' => $request->abstract, // Mapping: abstract -> abstract
+                        'pdf_url' => $request->pdf_url ?? null, // Tambahan: pdf_url dari form atau scraper
+                        'abstract' => $request->abstract ?? null, // Mapping: abstract -> abstract
                     ]);
                     break;
 
