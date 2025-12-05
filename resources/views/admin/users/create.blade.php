@@ -1,18 +1,31 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Tambah User Baru') }}
-        </h2>
+        <div class="flex items-center gap-3">
+            <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
+            <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
+                {{ __('Tambah User Baru') }}
+            </h2>
+        </div>    
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    
-                    {{-- Error Message --}}
-                    @if ($errors->any())
-                        <div class="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative">
+            {{-- Error Message --}}
+            @if ($errors->any())
+                <div x-data="{ show: true }" x-show="show"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-2"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-300"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-2"
+                     x-init="setTimeout(() => show = false, 5000)"
+                     class="mb-6 p-4 bg-red-50 text-red-700 border-l-4 border-red-500 rounded-r-lg shadow-md flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-red-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 6a1 1 0 012 0v4a1 1 0 01-2 0V6zm1 8a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
                             <strong class="font-bold">Oops! Ada kesalahan:</strong>
                             <ul class="mt-1 list-disc list-inside text-sm">
                                 @foreach ($errors->all() as $error)
@@ -20,7 +33,17 @@
                                 @endforeach
                             </ul>
                         </div>
-                    @endif
+                    </div>
+                    <button @click="show = false" class="text-red-600 hover:text-red-800 transition flex-shrink-0">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
 
                     <form action="{{ route('admin.users.store') }}" method="POST">
                         @csrf
@@ -113,6 +136,11 @@
                             <a href="{{ route('admin.users.index') }}" class="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </a>
+                            <button type="button"
+                                onclick="window.history.back()"
+                                class="px-6 py-2 bg-gray-100 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-200 transition">
+                                Kembali ke Sebelumnya
+                            </button>
                         </div>
                     </form>
                 </div>
