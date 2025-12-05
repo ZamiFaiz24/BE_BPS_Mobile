@@ -1,10 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
-            <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
-                {{ __('Tambah User Baru') }}
-            </h2>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-1 h-8 bg-gradient-to-b from-[#0093DD] to-[#0070AA] rounded-full"></div>
+                <h2 class="font-semibold text-xl text-[#0093DD] leading-tight">
+                    {{ __('Tambah User Baru') }}
+                </h2>
+            </div>
+            <button type="button" onclick="window.history.back()" 
+                class="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-200 transition text-sm">
+                ← Kembali
+            </button>
         </div>    
     </x-slot>
 
@@ -136,11 +142,6 @@
                             <a href="{{ route('admin.users.index') }}" class="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </a>
-                            <button type="button"
-                                onclick="window.history.back()"
-                                class="px-6 py-2 bg-gray-100 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-200 transition">
-                                Kembali ke Sebelumnya
-                            </button>
                         </div>
                     </form>
                 </div>
