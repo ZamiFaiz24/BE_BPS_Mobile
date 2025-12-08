@@ -20,6 +20,100 @@ use App\Services\DatasetHandlers\CategoryBasedStatisticHandler;
 
 class BpsDatasetController extends Controller
 {
+    /**
+     * Konfigurasi mapping kategori ID ke nama yang deskriptif
+     * Update di sini untuk mengubah tampilan kategori di grid
+     */
+    private const CATEGORY_MAPPING = [
+        1 => 'Statistik Demografi dan Sosial',
+        2 => 'Statistik Ekonomi dan Perdagangan',
+        3 => 'Statistik Pertanian dan Lingkungan',
+        // Tambahkan kategori lainnya sesuai kebutuhan
+    ];
+
+    /**
+     * Grid slots mapping.
+     *
+     * - key: slug used by frontend
+     * - title: display title
+     * - subject: optional subject name from DB to match
+     * - keywords: array of keywords to match against `dataset_name` (lowercased)
+     *
+     * Update this array to reflect the 12 grid items the Android expects.
+     */
+    private const GRID_SLOTS = [
+        'kependudukan' => [
+            'title' => 'Kependudukan',
+            'subject' => 'Penduduk',
+            'keywords' => ['penduduk', 'kependudukan']
+        ],
+        'kemiskinan' => [
+            'title' => 'Kemiskinan',
+            'subject' => 'Kemiskinan',
+            'keywords' => ['kemiskinan', 'garis kemiskinan']
+        ],
+        'tenaga-kerja' => [
+            'title' => 'Tenaga Kerja',
+            'subject' => 'Tenaga Kerja',
+            'keywords' => ['tenaga kerja', 'pekerja']
+        ],
+        'pengangguran' => [
+            'title' => 'Pengangguran',
+            'subject' => 'Tenaga Kerja',
+            'keywords' => ['pengangguran', 'tingkat pengangguran']
+        ],
+        'ipm' => [
+            'title' => 'IPM',
+            'subject' => 'IPM',
+            'keywords' => ['ipm', 'indeks pembangunan manusia']
+        ],
+        // Tambahkan slot lain sesuai kebutuhan Android (total bisa 12)
+    ];
+
+    /**
+     * Konfigurasi field yang bisa di-ambil per endpoint
+     * Edit di sini untuk mengatur data apa yang ingin ditampilkan
+     */
+    private const FIELD_CONFIG = [
+        'grid' => ['title', 'slug', 'dataset_count'],
+        'grid_detail' => ['id', 'dataset_code', 'dataset_name', 'last_update'],
+        'index' => ['id', 'dataset_name', 'subject', 'category'],
+        'show_basic' => ['id', 'dataset_code', 'dataset_name', 'subject', 'category'],
+    ];
+
+    /**
+     * Helper method untuk get category name
+     */
+    private function getCategoryName($categoryId)
+    {
+        return self::CATEGORY_MAPPING[$categoryId] ?? (string)$categoryId;
+    }
+
+    /**
+     * Helper method untuk extract field dari collection
+     */
+    private function selectFields($items, $fieldConfig)
+    {
+        if (!is_array($fieldConfig)) {
+            $fieldConfig = self::FIELD_CONFIG[$fieldConfig] ?? [];
+        }
+
+        return $items->map(function ($item) use ($fieldConfig) {
+            $result = [];
+            foreach ($fieldConfig as $field) {
+                if ($field === 'slug' && isset($item['title'])) {
+                    // Generate slug dari title jika tidak ada
+                    $result[$field] = \Illuminate\Support\Str::slug($item['title'], '-');
+                } else if ($field === 'last_update' && isset($item['updated_at'])) {
+                    // Format updated_at ke last_update
+                    $result[$field] = $item['updated_at'] ? $item['updated_at']->format('Y-m-d') : null;
+                } else if (isset($item[$field])) {
+                    $result[$field] = $item[$field];
+                }
+            }
+            return $result;
+        })->toArray();
+    }
 
     private function detectHandler(BpsDataset $dataset)
     {
@@ -33,7 +127,7 @@ class BpsDatasetController extends Controller
             return PopulationByAgeAndRegionHandler::class;
         }
 
-        
+
         if (str_contains($judul, 'penduduk') && str_contains($judul, 'kecamatan') && str_contains($judul, 'jenis kelamin')) {
             return PopulationByGenderAndRegionHandler::class;
         }
@@ -89,7 +183,7 @@ class BpsDatasetController extends Controller
             'insights'        => $insightData,
         ]);
     }
-    
+
     public function history(BpsDataset $dataset)
     {
         $handlerClass = $this->detectHandler($dataset);
@@ -132,6 +226,13 @@ class BpsDatasetController extends Controller
      * Get list of datasets (for Layer 3: Dataset List based on selected subject)
      * Filter by subject (NOT category)
      * GET /api/datasets?subject=Penduduk
+     * 
+     * Query params:
+     * - subject: Filter by subject
+     * - q: Search by dataset name
+     * - fields: Comma-separated field names (id, dataset_name, subject, category, dataset_code)
+     *   Default: id,dataset_name,subject,category
+     *   Example: /api/datasets?subject=Penduduk&fields=id,dataset_name
      */
     public function index(Request $request)
     {
@@ -142,44 +243,57 @@ class BpsDatasetController extends Controller
                 throw new Exception('Server setup error: Model not found.');
             }
 
-            // 2. Ambil filter dari URL query
-            $subject = $request->query('subject'); // FILTER BERDASARKAN SUBJECT (untuk Layar 3)
-            $q = $request->query('q'); // search
+            // Ambil filter dari URL query
+            $subject = $request->query('subject');
+            $q = $request->query('q');
+            $fieldsParam = $request->query('fields');
 
-            // 3. Mulai Query Builder
+            // Tentukan fields yang ingin di-ambil
+            if ($fieldsParam) {
+                $fields = array_map('trim', explode(',', $fieldsParam));
+                $allowedFields = ['id', 'dataset_code', 'dataset_name', 'subject', 'category', 'updated_at'];
+                $fields = array_intersect($fields, $allowedFields);
+            } else {
+                $fields = ['id', 'dataset_name', 'subject', 'category'];
+            }
+
+            // Pastikan 'id' selalu ada
+            if (!in_array('id', $fields)) {
+                array_unshift($fields, 'id');
+            }
+
+            // Mulai Query Builder
             $query = $modelClass::query();
 
-            // 4. Pilih kolom ringan (termasuk subject dan category)
-            $query->select([
-                'id',
-                'dataset_name',
-                'subject',   // Untuk filter Layar 3
-                'category',  // Untuk info tambahan (opsional)
-            ]);
+            // Pilih kolom yang diinginkan
+            $query->select($fields);
 
-            // 5. Terapkan filter 'subject' (jika ada) - UNTUK LAYAR 3
+            // Terapkan filter subject (jika ada)
             if ($subject) {
                 $query->where('subject', $subject);
             }
 
-            // 6. Pencarian judul
+            // Pencarian judul
             if ($q) {
                 $query->where('dataset_name', 'like', "%{$q}%");
             }
 
-            // 7. Ambil data (maks 100)
+            // Ambil data (maks 100)
             $datasets = $query->limit(100)->get();
 
-            // 8. Response ringan
-            return response()->json($datasets);
+            // Response
+            return response()->json([
+                'status' => 'success',
+                'count' => count($datasets),
+                'data' => $datasets
+            ]);
         } catch (\Exception $e) {
             Log::error('Error in BpsDatasetController@index: ' . $e->getMessage());
 
             return response()->json([
-                'error_A' => 'Terjadi kesalahan pada server.',
-                'error_B_message' => $e->getMessage(),
-                'error_C_file' => $e->getFile(),
-                'error_D_line' => $e->getLine()
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -232,19 +346,175 @@ class BpsDatasetController extends Controller
                 sort($categoryData['subjects']);
             }
 
-            // Convert associative array ke indexed array dan sort by category name
-            $result = array_values($groupedData);
-            usort($result, function ($a, $b) {
-                return strcmp($a['category'], $b['category']);
-            });
+            // Sort by category name (keep as associative)
+            ksort($groupedData);
 
-            return response()->json($result, 200);
+            return response()->json($groupedData, 200);
         } catch (\Exception $e) {
             Log::error('Error in BpsDatasetController@getCategories: ' . $e->getMessage());
 
             return response()->json([
                 'error' => 'Terjadi kesalahan pada server.',
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get grid view of categories with dataset count
+     * GET /api/datasets/grid
+     */
+    public function getGrid(Request $request)
+    {
+        try {
+            // Ambil seluruh dataset (kita butuh subject + nama untuk pemetaan ke grid slots)
+            $datasets = BpsDataset::select('id', 'dataset_name', 'subject')->get();
+
+            // Inisialisasi counters untuk tiap slot berdasarkan GRID_SLOTS
+            $slots = [];
+            foreach (self::GRID_SLOTS as $slug => $cfg) {
+                $slots[$slug] = [
+                    'title' => $cfg['title'],
+                    'slug' => $slug,
+                    'dataset_count' => 0,
+                ];
+            }
+
+            // Tambahkan slot 'others' untuk dataset yang tidak cocok
+            $slots['others'] = [
+                'title' => 'Lainnya',
+                'slug' => 'others',
+                'dataset_count' => 0,
+            ];
+
+            // Iterasi dataset dan tentukan slotnya
+            foreach ($datasets as $ds) {
+                $placed = false;
+                $name = strtolower($ds->dataset_name ?? '');
+                $subject = strtolower($ds->subject ?? '');
+
+                foreach (self::GRID_SLOTS as $slug => $cfg) {
+                    // cek keywords dulu (prioritas)
+                    foreach ($cfg['keywords'] as $kw) {
+                        if ($kw !== '' && str_contains($name, strtolower($kw))) {
+                            $slots[$slug]['dataset_count']++;
+                            $placed = true;
+                            break 2;
+                        }
+                    }
+
+                    // cek subject match bila disediakan
+                    if (isset($cfg['subject']) && $cfg['subject'] !== '' && strtolower($cfg['subject']) === $subject) {
+                        $slots[$slug]['dataset_count']++;
+                        $placed = true;
+                        break;
+                    }
+                }
+
+                if (!$placed) {
+                    $slots['others']['dataset_count']++;
+                }
+            }
+
+            // Susun hasil sesuai urutan GRID_SLOTS lalu others
+            $gridData = [];
+            foreach (array_keys(self::GRID_SLOTS) as $slug) {
+                $gridData[] = $slots[$slug];
+            }
+            $gridData[] = $slots['others'];
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $gridData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in BpsDatasetController@getGrid: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get datasets by category slug
+     * GET /api/datasets/grid/{slug}
+     * 
+     * Query params:
+     * - fields: Comma-separated field names (id, dataset_code, dataset_name, last_update, subject, category)
+     *   Default: id,dataset_code,dataset_name,last_update
+     *   Example: /api/datasets/grid/statistik-demografi-dan-sosial?fields=id,dataset_name,subject
+     */
+    public function getGridDetail($slug, Request $request)
+    {
+        try {
+            // Cari slot konfigurasi berdasarkan slug
+            $slotConfig = self::GRID_SLOTS[$slug] ?? null;
+
+            if (!$slotConfig) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Grid slot tidak ditemukan'
+                ], 404);
+            }
+
+            // Ambil field pilihan dari query atau gunakan default
+            $fieldsParam = $request->query('fields');
+            if ($fieldsParam) {
+                $fields = array_map('trim', explode(',', $fieldsParam));
+                $allowedFields = ['id', 'dataset_code', 'dataset_name', 'updated_at', 'subject', 'category'];
+                $fields = array_intersect($fields, $allowedFields);
+            } else {
+                $fields = ['id', 'dataset_code', 'dataset_name', 'updated_at', 'subject'];
+            }
+
+            if (!in_array('id', $fields)) {
+                array_unshift($fields, 'id');
+            }
+
+            // Build query: match by keywords OR subject
+            $query = BpsDataset::query();
+
+            // Apply subject match if provided
+            if (!empty($slotConfig['subject'])) {
+                $query->where('subject', $slotConfig['subject']);
+            }
+
+            // Also attempt to include datasets matching any keyword in name
+            if (!empty($slotConfig['keywords'])) {
+                $query->orWhere(function ($q) use ($slotConfig) {
+                    foreach ($slotConfig['keywords'] as $kw) {
+                        if ($kw === '') continue;
+                        $q->orWhere('dataset_name', 'like', '%' . $kw . '%');
+                    }
+                });
+            }
+
+            $datasets = $query->select($fields)->get();
+
+            $gridDetail = $datasets->map(function ($dataset) {
+                $result = $dataset->toArray();
+                if (isset($result['updated_at'])) {
+                    $result['last_update'] = $result['updated_at'] ? \Carbon\Carbon::parse($result['updated_at'])->format('Y-m-d') : null;
+                    unset($result['updated_at']);
+                }
+                return $result;
+            })->toArray();
+
+            return response()->json([
+                'status' => 'success',
+                'category' => $slotConfig['title'],
+                'datasets' => $gridDetail
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in BpsDatasetController@getGridDetail: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

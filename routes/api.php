@@ -54,6 +54,10 @@ Route::prefix('content')->group(function () {
 Route::prefix('datasets')->group(function () {
     Route::get('categories', [BpsDatasetController::class, 'getCategories']);
 
+    // Grid endpoints (letakkan sebelum routes dengan parameter dinamis)
+    Route::get('grid', [BpsDatasetController::class, 'getGrid']);
+    Route::get('grid/{slug}', [BpsDatasetController::class, 'getGridDetail']);
+
     // Route untuk daftar dataset (ringan)
     Route::get('/', [BpsDatasetController::class, 'index']);
 
