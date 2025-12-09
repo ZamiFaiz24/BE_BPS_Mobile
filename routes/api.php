@@ -7,6 +7,7 @@ use App\Http\Controllers\API\BpsSyncController;
 use App\Http\Controllers\API\BpsDataController;
 use App\Http\Controllers\API\BpsContentController;
 use App\Http\Controllers\Admin\ScrapeController;
+use Symfony\Component\Routing\Route as RoutingRoute;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -22,7 +23,6 @@ Route::get('/data/{dataset_code}', [BpsDataController::class, 'show']);
 Route::get('/chart/gender/{dataset_code}/{year}', [BpsDataController::class, 'getGenderChartData']);
 
 // Route untuk mengambil insight indicators dari multiple datasets
-Route::get('/insights/indicators', [BpsDataController::class, 'getInsightIndicators']);
 
 // Route untuk update unit dataset (manual fix)
 Route::post('/update-dataset-unit', [BpsDataController::class, 'updateDatasetUnit']);
@@ -51,12 +51,17 @@ Route::prefix('content')->group(function () {
     Route::get('/publications', [BpsContentController::class, 'getPublications']);
 });
 
-Route::prefix('datasets')->group(function () {
-    Route::get('categories', [BpsDatasetController::class, 'getCategories']);
+Route::prefix('homepage')->group(function () {
+
+    Route::get('/insights/indicators', [BpsDataController::class, 'getInsightIndicators']);
 
     // Grid endpoints (letakkan sebelum routes dengan parameter dinamis)
     Route::get('grid', [BpsDatasetController::class, 'getGrid']);
     Route::get('grid/{slug}', [BpsDatasetController::class, 'getGridDetail']);
+});
+
+Route::prefix('datasets')->group(function () {
+    Route::get('categories', [BpsDatasetController::class, 'getCategories']);
 
     // Route untuk daftar dataset (ringan)
     Route::get('/', [BpsDatasetController::class, 'index']);

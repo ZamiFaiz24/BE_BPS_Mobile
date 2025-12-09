@@ -41,33 +41,78 @@ class BpsDatasetController extends Controller
      *
      * Update this array to reflect the 12 grid items the Android expects.
      */
+    /**
+     * Konfigurasi Grid Menu sesuai desain UI (12 Menu).
+     * Urutan di array ini menentukan urutan tampilan di HP.
+     */
     private const GRID_SLOTS = [
+        // Baris 1
         'kependudukan' => [
-            'title' => 'Kependudukan',
-            'subject' => 'Penduduk',
-            'keywords' => ['penduduk', 'kependudukan']
-        ],
-        'kemiskinan' => [
-            'title' => 'Kemiskinan',
-            'subject' => 'Kemiskinan',
-            'keywords' => ['kemiskinan', 'garis kemiskinan']
+            'title'    => 'Penduduk', // Judul di HP
+            'subject'  => 'Penduduk', // Subject di Database (Prioritas 2)
+            'keywords' => ['penduduk', 'warga', 'demografi', 'kepadatan'] // Kata kunci (Prioritas 1)
         ],
         'tenaga-kerja' => [
-            'title' => 'Tenaga Kerja',
-            'subject' => 'Tenaga Kerja',
-            'keywords' => ['tenaga kerja', 'pekerja']
+            'title'    => 'Tenaga Kerja',
+            'subject'  => 'Tenaga Kerja',
+            'keywords' => ['tenaga kerja', 'pekerja', 'buruh']
         ],
         'pengangguran' => [
-            'title' => 'Pengangguran',
-            'subject' => 'Tenaga Kerja',
-            'keywords' => ['pengangguran', 'tingkat pengangguran']
+            'title'    => 'Pengangguran',
+            'subject'  => null, // Set null biar fokus cari keyword saja
+            'keywords' => ['pengangguran', 'tpak', 'tpt', 'tidak bekerja']
+        ],
+
+        // Baris 2
+        'kemiskinan' => [
+            'title'    => 'Kemiskinan',
+            'subject'  => 'Kemiskinan',
+            'keywords' => ['kemiskinan', 'miskin', 'garis kemiskinan']
+        ],
+        'rasio-gini' => [
+            'title'    => 'Rasio GINI',
+            'subject'  => null, // Biasanya ini sub-bab Kemiskinan, jadi kita cari via keyword
+            'keywords' => ['gini', 'ketimpangan', 'gini ratio']
         ],
         'ipm' => [
-            'title' => 'IPM',
-            'subject' => 'IPM',
-            'keywords' => ['ipm', 'indeks pembangunan manusia']
+            'title'    => 'IPM',
+            'subject'  => 'IPM',
+            'keywords' => ['ipm', 'pembangunan manusia', 'hdi']
         ],
-        // Tambahkan slot lain sesuai kebutuhan Android (total bisa 12)
+
+        // Baris 3
+        'inflasi' => [
+            'title'    => 'Inflasi',
+            'subject'  => 'Inflasi', // Kadang masuk Ekonomi
+            'keywords' => ['inflasi', 'ihk', 'harga konsumen']
+        ],
+        'ekonomi' => [
+            'title'    => 'Ekonomi',
+            'subject'  => 'Ekonomi',
+            'keywords' => ['ekonomi', 'pertumbuhan', 'laju pertumbuhan']
+        ],
+        'pdrb' => [
+            'title'    => 'PDRB',
+            'subject'  => 'PDRB', // Kadang masuk Neraca Wilayah
+            'keywords' => ['pdrb', 'produk domestik', 'adhb', 'adhk']
+        ],
+
+        // Baris 4
+        'pendidikan' => [
+            'title'    => 'Pendidikan',
+            'subject'  => 'Pendidikan',
+            'keywords' => ['pendidikan', 'sekolah', 'melek huruf', 'aps', 'apk', 'apm']
+        ],
+        'perumahan' => [
+            'title'    => 'Perumahan',
+            'subject'  => 'Perumahan',
+            'keywords' => ['perumahan', 'tempat tinggal', 'bangunan', 'lantai', 'dinding']
+        ],
+        'pertanian' => [
+            'title'    => 'Pertanian',
+            'subject'  => 'Pertanian',
+            'keywords' => ['pertanian', 'padi', 'palawija', 'holtikultura', 'luas panen']
+        ]
     ];
 
     /**
@@ -144,6 +189,54 @@ class BpsDatasetController extends Controller
         return SingleValueTimeSeriesHandler::class;
     }
 
+    /**
+     * Get detailed dataset information with table, chart, and insight data
+     *
+     * This endpoint returns comprehensive data for a specific BPS dataset including:
+     * - Table data with rows and columns formatted for display
+     * - Chart data (formatted per handler type - bar, line, etc.)
+     * - Insight/summary information
+     * - List of available years for the dataset
+     *
+     * The data format depends on the dataset type detected from its name:
+     * - Population by Age & Gender
+     * - Population by Gender & Region
+     * - Population by Age & Region
+     * - Gender-based statistics
+     * - Category-based statistics
+     * - Time series (default)
+     *
+     * @urlParam dataset integer required The dataset ID. Example: 20
+     * @queryParam year integer optional The year to retrieve data for. If not provided, uses latest available year. Example: 2022
+     * @queryParam mode string optional Display mode (used by some handlers). Example: region
+     *
+     * @response 200 {
+     *   "dataset": {
+     *     "id": 20,
+     *     "dataset_code": "SP010101",
+     *     "dataset_name": "Penduduk menurut kelompok umur dan jenis kelamin",
+     *     "subject": "Penduduk",
+     *     "category": "Statistik Demografi",
+     *     "unit": "Jiwa"
+     *   },
+     *   "available_years": [2023, 2022, 2021, 2020],
+     *   "current_year": 2023,
+     *   "table": {
+     *     "headers": ["Kelompok Umur", "Laki-Laki", "Perempuan", "Total"],
+     *     "rows": [
+     *       ["0-4 tahun", "5000000", "4800000", "9800000"]
+     *     ]
+     *   },
+     *   "chart": {
+     *     "type": "bar",
+     *     "title": "Penduduk menurut Kelompok Umur",
+     *     "data": {}
+     *   },
+     *   "insights": ["Populasi total di tahun 2023 adalah 275 juta jiwa"]
+     * }
+     *
+     * @response 404 {"error": "Dataset not found"}
+     */
     public function show(BpsDataset $dataset)
     {
         // 1. Deteksi Handler (Sudah ada)
@@ -184,10 +277,32 @@ class BpsDatasetController extends Controller
         ]);
     }
 
+    /**
+     * Get historical data for a specific dataset
+     *
+     * Retrieves historical trends and time-series data for a dataset.
+     * The data structure depends on the handler's implementation of getHistoryData().
+     *
+     * @urlParam dataset integer required The dataset ID. Example: 20
+     * @queryParam year integer optional Filter history by starting year. Example: 2020
+     *
+     * @response 200 {
+     *   "dataset": {
+     *     "id": 20,
+     *     "dataset_code": "SP010101",
+     *     "dataset_name": "Penduduk menurut kelompok umur dan jenis kelamin"
+     *   },
+     *   "history": [
+     *     {"year": 2023, "value": 275000000},
+     *     {"year": 2022, "value": 273000000}
+     *   ]
+     * }
+     *
+     * @response 404 {"error": "Dataset not found"}
+     */
     public function history(BpsDataset $dataset)
     {
         $handlerClass = $this->detectHandler($dataset);
-
         $year = request('year');
         $handler = app()->make($handlerClass, [
             'dataset' => $dataset,
@@ -204,6 +319,30 @@ class BpsDatasetController extends Controller
         ]);
     }
 
+    /**
+     * Get insight and summary information for a specific dataset
+     *
+     * Provides key findings, statistics, and analysis for a dataset.
+     * Insights may include percentage calculations, comparative data, and significant findings.
+     *
+     * @urlParam dataset integer required The dataset ID. Example: 20
+     * @queryParam year integer optional The year to generate insights for. Example: 2023
+     *
+     * @response 200 {
+     *   "dataset": {
+     *     "id": 20,
+     *     "dataset_code": "SP010101",
+     *     "dataset_name": "Penduduk menurut kelompok umur dan jenis kelamin"
+     *   },
+     *   "insights": [
+     *     "Populasi total tahun 2023 adalah 275 juta jiwa",
+     *     "Pertumbuhan populasi 0.7% dibanding tahun lalu",
+     *     "Rasio gender 50:50 menunjukkan keseimbangan sempurna"
+     *   ]
+     * }
+     *
+     * @response 404 {"error": "Dataset not found"}
+     */
     public function insights(BpsDataset $dataset)
     {
         // Panggil detektif lagi
@@ -223,16 +362,36 @@ class BpsDatasetController extends Controller
         ]);
     }
     /**
-     * Get list of datasets (for Layer 3: Dataset List based on selected subject)
-     * Filter by subject (NOT category)
-     * GET /api/datasets?subject=Penduduk
-     * 
-     * Query params:
-     * - subject: Filter by subject
-     * - q: Search by dataset name
-     * - fields: Comma-separated field names (id, dataset_name, subject, category, dataset_code)
-     *   Default: id,dataset_name,subject,category
-     *   Example: /api/datasets?subject=Penduduk&fields=id,dataset_name
+     * Get list of datasets filtered by subject or search query
+     *
+     * Returns a paginated list of datasets with optional filtering by subject
+     * or full-text search on dataset name. This endpoint is typically used for
+     * the dataset list view in Layer 3 of the UI navigation hierarchy.
+     *
+     * @queryParam subject string optional Filter by subject name. Example: Penduduk
+     * @queryParam q string optional Search by dataset name (partial match). Example: kelompok umur
+     * @queryParam fields string optional Comma-separated field names to return. Allowed: id, dataset_code, dataset_name, subject, category, updated_at. Default: id,dataset_name,subject,category. Example: id,dataset_name
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "count": 15,
+     *   "data": [
+     *     {
+     *       "id": 20,
+     *       "dataset_name": "Penduduk menurut kelompok umur dan jenis kelamin",
+     *       "subject": "Penduduk",
+     *       "category": "Statistik Demografi"
+     *     },
+     *     {
+     *       "id": 21,
+     *       "dataset_name": "Penduduk menurut kabupaten/kota dan jenis kelamin",
+     *       "subject": "Penduduk",
+     *       "category": "Statistik Demografi"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {"status": "error", "message": "Terjadi kesalahan pada server."}
      */
     public function index(Request $request)
     {
@@ -299,10 +458,27 @@ class BpsDatasetController extends Controller
     }
 
     /**
-     * Get categories with their subjects (for Layer 2: Category & Subject selection)
-     * GET /api/datasets/categories
-     * 
-     * JANGAN DIUBAH - INI SUDAH BENAR
+     * Get all categories with their subjects for navigation
+     *
+     * Returns a hierarchical structure of all available BPS data categories
+     * and their corresponding subjects. This is used in Layer 2 of the UI
+     * to display category and subject selection options.
+     *
+     * The response is organized as an object where keys are category names
+     * and values contain the list of subjects within that category.
+     *
+     * @response 200 {
+     *   "Statistik Demografi": {
+     *     "category": "Statistik Demografi",
+     *     "subjects": ["Penduduk", "Migrasi", "Kelahiran"]
+     *   },
+     *   "Statistik Ekonomi": {
+     *     "category": "Statistik Ekonomi",
+     *     "subjects": ["PDRB", "Inflasi", "Perdagangan"]
+     *   }
+     * }
+     *
+     * @response 500 {"error": "Terjadi kesalahan pada server.", "message": "..."}
      */
     public function getCategories(Request $request)
     {
@@ -361,16 +537,43 @@ class BpsDatasetController extends Controller
     }
 
     /**
-     * Get grid view of categories with dataset count
-     * GET /api/datasets/grid
+     * Get grid menu of statistics categories with dataset counts
+     *
+     * Returns a grid layout (typically 12 items for mobile UI) representing
+     * major statistics categories. Each grid item includes:
+     * - Title: Display name of the category
+     * - Slug: URL-friendly identifier
+     * - Dataset count: Number of datasets in that category
+     *
+     * The grid includes categories like Penduduk, Tenaga Kerja, Pengangguran,
+     * Kemiskinan, IPM, Inflasi, Ekonomi, PDRB, Pendidikan, Perumahan, Pertanian,
+     * and Lainnya (Others).
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "data": [
+     *     {
+     *       "title": "Penduduk",
+     *       "slug": "kependudukan",
+     *       "dataset_count": 12
+     *     },
+     *     {
+     *       "title": "Tenaga Kerja",
+     *       "slug": "tenaga-kerja",
+     *       "dataset_count": 8
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {"status": "error"}
      */
     public function getGrid(Request $request)
     {
         try {
-            // Ambil seluruh dataset (kita butuh subject + nama untuk pemetaan ke grid slots)
+            // Ambil data ringan saja
             $datasets = BpsDataset::select('id', 'dataset_name', 'subject')->get();
 
-            // Inisialisasi counters untuk tiap slot berdasarkan GRID_SLOTS
+            // Siapkan wadah counts
             $slots = [];
             foreach (self::GRID_SLOTS as $slug => $cfg) {
                 $slots[$slug] = [
@@ -380,72 +583,100 @@ class BpsDatasetController extends Controller
                 ];
             }
 
-            // Tambahkan slot 'others' untuk dataset yang tidak cocok
+            // Wadah untuk 'Lainnya'
             $slots['others'] = [
                 'title' => 'Lainnya',
                 'slug' => 'others',
                 'dataset_count' => 0,
             ];
 
-            // Iterasi dataset dan tentukan slotnya
+            // --- LOGIC PERBAIKAN DI SINI ---
             foreach ($datasets as $ds) {
-                $placed = false;
+                $placed = false; // Penanda apakah dataset ini sudah masuk minimal 1 slot
+
                 $name = strtolower($ds->dataset_name ?? '');
                 $subject = strtolower($ds->subject ?? '');
 
                 foreach (self::GRID_SLOTS as $slug => $cfg) {
-                    // cek keywords dulu (prioritas)
-                    foreach ($cfg['keywords'] as $kw) {
-                        if ($kw !== '' && str_contains($name, strtolower($kw))) {
-                            $slots[$slug]['dataset_count']++;
-                            $placed = true;
-                            break 2;
+                    $isMatch = false;
+
+                    // 1. Cek Keywords (Prioritas)
+                    if (!empty($cfg['keywords'])) {
+                        foreach ($cfg['keywords'] as $kw) {
+                            if ($kw !== '' && str_contains($name, strtolower($kw))) {
+                                $isMatch = true;
+                                break; // Ketemu satu keyword cocok di slot ini, lanjut
+                            }
                         }
                     }
 
-                    // cek subject match bila disediakan
-                    if (isset($cfg['subject']) && $cfg['subject'] !== '' && strtolower($cfg['subject']) === $subject) {
+                    // 2. Cek Subject (Jika belum match via keyword)
+                    // Logikanya: Jika Subject DB sama dengan Subject Config, anggap cocok
+                    if (!$isMatch && !empty($cfg['subject'])) {
+                        if ($subject === strtolower($cfg['subject'])) {
+                            $isMatch = true;
+                        }
+                    }
+
+                    // Jika COCOK, tambahkan hitungan
+                    if ($isMatch) {
                         $slots[$slug]['dataset_count']++;
                         $placed = true;
-                        break;
+
+                        // PERUBAHAN PENTING:
+                        // Kita HAPUS 'break 2' di sini.
+                        // Biarkan loop lanjut ke slot berikutnya.
+                        // Efeknya: Dataset "Pengangguran" akan terhitung di menu "Pengangguran" 
+                        // DAN mungkin juga terhitung di menu "Tenaga Kerja".
+                        // Ini justru bagus agar user bisa menemukannya di kedua tempat.
                     }
                 }
 
+                // Jika sama sekali tidak masuk kategori manapun, masukkan ke Others
                 if (!$placed) {
                     $slots['others']['dataset_count']++;
                 }
             }
 
-            // Susun hasil sesuai urutan GRID_SLOTS lalu others
-            $gridData = [];
-            foreach (array_keys(self::GRID_SLOTS) as $slug) {
-                $gridData[] = $slots[$slug];
-            }
-            $gridData[] = $slots['others'];
-
+            // Rapikan array hasil (array_values)
             return response()->json([
                 'status' => 'success',
-                'data' => $gridData
+                'data' => array_values($slots)
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in BpsDatasetController@getGrid: ' . $e->getMessage());
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan pada server.',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('Grid Error: ' . $e->getMessage());
+            return response()->json(['status' => 'error'], 500);
         }
     }
 
     /**
-     * Get datasets by category slug
-     * GET /api/datasets/grid/{slug}
-     * 
-     * Query params:
-     * - fields: Comma-separated field names (id, dataset_code, dataset_name, last_update, subject, category)
-     *   Default: id,dataset_code,dataset_name,last_update
-     *   Example: /api/datasets/grid/statistik-demografi-dan-sosial?fields=id,dataset_name,subject
+     * Get detailed list of datasets for a specific grid category
+     *
+     * Returns all datasets belonging to a specific category (identified by slug).
+     * Datasets are matched using keywords and subject names configured in GRID_SLOTS.
+     *
+     * Available slugs: kependudukan, tenaga-kerja, pengangguran, kemiskinan, rasio-gini,
+     * ipm, inflasi, ekonomi, pdrb, pendidikan, perumahan, pertanian, others
+     *
+     * @urlParam slug string required The category slug. Example: kependudukan
+     * @queryParam fields string optional Comma-separated field names to return. Allowed: id, dataset_code, dataset_name, updated_at, subject, category. Default: id,dataset_code,dataset_name,updated_at. Example: id,dataset_name,subject
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "category": "Penduduk",
+     *   "datasets": [
+     *     {
+     *       "id": 20,
+     *       "dataset_code": "SP010101",
+     *       "dataset_name": "Penduduk menurut kelompok umur dan jenis kelamin",
+     *       "last_update": "2023-12-01",
+     *       "subject": "Penduduk"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 404 {"status": "error", "message": "Grid slot tidak ditemukan"}
+     * @response 500 {"status": "error", "message": "Terjadi kesalahan pada server."}
      */
     public function getGridDetail($slug, Request $request)
     {
