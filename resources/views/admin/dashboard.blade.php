@@ -95,22 +95,22 @@
                                 </svg>
                             </div>
                             <div>
-                                {{-- ROLE: SUPER ADMIN --}}
-                                @if(auth()->user()->role === 'Super Admin')
-                                    <p class="font-bold text-gray-900 text-base">
-                                        Selamat datang kembali, {{ auth()->user()->name }}! 👋
-                                    </p>
-                                    <p class="text-gray-600 text-sm mt-1 leading-relaxed">
-                                        Anda memegang <strong>kendali penuh</strong> atas sistem. Kelola pengguna, konfigurasi sinkronisasi data, serta validasi seluruh konten dan dataset statistik.
-                                    </p>
-
                                 {{-- ROLE: OPERATOR --}}
-                                @elseif(auth()->user()->role === 'Operator')
+                                @if(auth()->user()->role === 'Operator')
                                     <p class="font-bold text-gray-900 text-base">
                                         Halo, {{ auth()->user()->name }}! Siap bekerja? 🚀
                                     </p>
                                     <p class="text-gray-600 text-sm mt-1 leading-relaxed">
                                         Fokus utama Anda adalah <strong>manajemen data harian</strong>. Silakan perbarui dataset statistik, publikasikan berita terbaru, dan kelola infografis.
+                                    </p>
+
+                                {{-- ROLE: SUPER ADMIN --}}
+                                @elseif(auth()->user()->role === 'Super Admin')
+                                    <p class="font-bold text-gray-900 text-base">
+                                        Selamat datang kembali, {{ auth()->user()->name }}! 👋
+                                    </p>
+                                    <p class="text-gray-600 text-sm mt-1 leading-relaxed">
+                                        Anda memegang <strong>kendali penuh</strong> atas sistem. Kelola pengguna, konfigurasi sinkronisasi data, serta validasi seluruh konten dan dataset statistik.
                                     </p>
 
                                 {{-- ROLE: LAINNYA / VIEWER --}}
@@ -152,26 +152,30 @@
                         </div>
                     </div>
 
-                    {{-- Data Update --}}
+                    {{-- Dataset Status --}}
                     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div class="flex items-center gap-4">
                             <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
                                 <x-heroicon-s-chart-bar class="w-8 h-8" />
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-500 mb-1">Update Data</p>
-                                @if(isset($lastSyncAddedCount) && $lastSyncAddedCount > 0)
-                                    <p class="text-3xl font-bold text-green-600 flex items-center gap-1">
-                                        <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
-                                        </svg>
-                                        +{{ number_format($lastSyncAddedCount) }}
-                                    </p>
-                                    <p class="text-xs text-gray-400 mt-1">Total: {{ number_format($valueCount ?? 0) }} baris data</p>
-                                @else
-                                    <p class="text-3xl font-bold text-gray-900">{{ number_format($valueCount ?? 0) }}</p>
-                                    <p class="text-xs text-gray-400 mt-1">Belum ada update terbaru</p>
-                                @endif
+                                <p class="text-sm font-medium text-gray-500 mb-1">Dataset Aktif</p>
+                                @php
+                                    $configService = app('App\Services\DatasetConfigService');
+                                    $allDatasets = $configService->getAllDatasets();
+                                    $enabledCount = collect($allDatasets)->where('enabled', true)->count();
+                                    $totalConfigured = count($allDatasets);
+                                    $percentage = $totalConfigured > 0 ? round(($enabledCount / $totalConfigured) * 100) : 0;
+                                @endphp
+                                <p class="text-3xl font-bold text-gray-900">
+                                    {{ $enabledCount }}<span class="text-xl text-gray-400">/{{ $totalConfigured }}</span>
+                                </p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                        <div class="bg-green-600 h-full transition-all duration-300" style="width: {{ $percentage }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-semibold text-gray-600">{{ $percentage }}%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
