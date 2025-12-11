@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\BpsDataset;
 use App\Models\BpsDatavalue;
 use App\Models\SyncLog;
+use App\Models\DatasetOverride;
+use App\Services\DatasetConfigService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -108,32 +110,6 @@ class DashboardController extends Controller
             ->withQueryString();
     }
 
-    public function updateInsightType(Request $request, BpsDataset $dataset)
-    {
-        $request->validate([
-            'insight_type' => 'required|string|in:default,percent_lower_is_better,percent_higher_is_better,number_lower_is_better,number_higher_is_better',
-        ]);
-
-        $dataset->insight_type = $request->input('insight_type');
-        $dataset->save();
-
-        return redirect()->back()->with('status', 'Tipe insight untuk dataset berhasil diperbarui.');
-    }
-
-    public function updateAllInsightTypes(Request $request)
-    {
-        $validated = $request->validate([
-            'insight_types' => 'required|array',
-            'insight_types.*' => 'required|string|in:default,percent_lower_is_better,percent_higher_is_better,number_lower_is_better,number_higher_is_better',
-        ]);
-
-        foreach ($validated['insight_types'] as $datasetId => $insightType) {
-            BpsDataset::where('id', $datasetId)->update(['insight_type' => $insightType]);
-        }
-
-        return redirect()->route('admin.dashboard')->with('status', 'Semua perubahan tipe insight berhasil disimpan.');
-    }
-
     /**
      * PERBAIKAN: Method ini sekarang menjadi "tipis" dan memanggil
      * "otak" yang sama dengan SyncController (yaitu 'bps:fetch-data').
@@ -187,7 +163,14 @@ class DashboardController extends Controller
     public function edit(BpsDataset $dataset)
     {
         // Pass along current filter context implicitly via query params
-        return view('admin.datasets.edit', compact('dataset'));
+        // Ambil daftar subject untuk dropdown (opsional)
+        $subjects = BpsDataset::select('subject')
+            ->distinct()
+            ->whereNotNull('subject')
+            ->orderBy('subject')
+            ->get();
+
+        return view('admin.datasets.edit', compact('dataset', 'subjects'));
     }
 
     public function update(Request $request, BpsDataset $dataset)
@@ -204,6 +187,46 @@ class DashboardController extends Controller
         return redirect()->route('admin.dashboard', $preserve)->with('status', 'Tipe insight berhasil diubah.');
     }
 
+    /**
+     * Update dataset config (tahun_mulai, tahun_akhir, dll)
+     * Route: POST /admin/datasets/{datasetId}/update-config
+     */
+    public function updateConfig(Request $request, $datasetId)
+    {
+        try {
+            $request->validate([
+                'tahun_mulai' => 'required|integer|min:1900|max:2100',
+                'tahun_akhir' => 'required|integer|min:1900|max:2100|gte:tahun_mulai',
+            ]);
+
+            $configService = new DatasetConfigService();
+            $configService->updateDatasetConfig($datasetId, [
+                'tahun_mulai' => $request->tahun_mulai,
+                'tahun_akhir' => $request->tahun_akhir,
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Konfigurasi dataset berhasil diperbarui.'
+                ]);
+            }
+
+            return redirect()->back()->with('status', 'Konfigurasi dataset berhasil diperbarui.');
+        } catch (\Exception $e) {
+            Log::error("Error updating config for {$datasetId}: " . $e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memperbarui konfigurasi: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Gagal memperbarui konfigurasi: ' . $e->getMessage()]);
+        }
+    }
+
     public function ajaxSearch(Request $request)
     {
         $query = BpsDataset::query();
@@ -218,5 +241,149 @@ class DashboardController extends Controller
         $datasets = $query->orderBy('dataset_name')->paginate($perPage);
 
         return view('admin.datasets.partials.table', compact('datasets'))->render();
+    }
+
+    /**
+     * Sync single dataset manually
+     * Route: POST /admin/datasets/{datasetId}/sync
+     */
+    public function syncSingleDataset(Request $request, $datasetId)
+    {
+        try {
+            // 1. Kunci untuk prevent double click
+            $lock = Cache::lock("sync:dataset:{$datasetId}", 10);
+            if (!$lock->get()) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Dataset sedang disinkronisasi. Coba lagi nanti.'], 429);
+                }
+                return redirect()->back()->withErrors(['sync_error' => 'Dataset sedang disinkronisasi. Coba lagi nanti.']);
+            }
+
+            // 2. Validasi dataset exists di config
+            $configService = new DatasetConfigService();
+            $dataset = $configService->getDataset($datasetId);
+
+            if (!$dataset) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                }
+                return redirect()->back()->withErrors(['sync_error' => 'Dataset tidak ditemukan.']);
+            }
+
+            // 3. Cek apakah dataset enabled
+            if (!$dataset['enabled']) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Dataset tidak aktif (disabled).'], 422);
+                }
+                return redirect()->back()->withErrors(['sync_error' => 'Dataset tidak aktif (disabled). Silakan aktifkan terlebih dahulu.']);
+            }
+
+            // 4. Buat temporary override untuk hanya enable dataset ini
+            // Sementara disable semua dataset lain dengan cara set flag khusus
+            $userId = Auth::id();
+
+            // Buat sync log
+            $syncLog = SyncLog::create([
+                'user_id' => $userId,
+                'status' => 'berjalan',
+                'started_at' => now(),
+                'summary_message' => "Sinkronisasi dataset '{$dataset['name']}' dimulai..."
+            ]);
+
+            Log::info("Sync Single Dataset '{$datasetId}' triggered by User ID: {$userId}, Log ID: {$syncLog->id}");
+
+            // Queue sync dengan parameter log_id dan dataset_id
+            Artisan::queue('bps:fetch-data', [
+                '--log_id' => $syncLog->id,
+                '--dataset_id' => $datasetId
+            ])->onQueue('sync-jobs');
+
+            $message = "Sinkronisasi dataset '{$dataset['name']}' telah dimasukkan ke antrean.";
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => $message]);
+            }
+
+            return redirect()->back()->with('status', $message);
+        } catch (\Exception $e) {
+            Log::error("Error syncing dataset {$datasetId}: " . $e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memicu sinkronisasi: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->withErrors(['sync_error' => 'Gagal memicu sinkronisasi: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Toggle dataset enable/disable
+     * Route: POST /admin/datasets/{datasetId}/toggle
+     */
+    public function toggleDataset(Request $request, $datasetId)
+    {
+        try {
+            $request->validate([
+                'enabled' => 'required|boolean',
+            ]);
+
+            // Validasi dataset exists
+            $configService = new DatasetConfigService();
+            $dataset = $configService->getDataset($datasetId);
+
+            if (!$dataset) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                }
+                return redirect()->back()->withErrors(['error' => 'Dataset tidak ditemukan.']);
+            }
+
+            // Toggle di database
+            $enabled = $request->boolean('enabled');
+            $configService->toggleDataset($datasetId, $enabled);
+
+            $status = $enabled ? 'diaktifkan' : 'dinonaktifkan';
+            $message = "Dataset '{$dataset['name']}' berhasil {$status}.";
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => $message, 'enabled' => $enabled]);
+            }
+
+            return redirect()->back()->with('status', $message);
+        } catch (\Exception $e) {
+            Log::error("Error toggling dataset {$datasetId}: " . $e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal mengubah status: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Gagal mengubah status: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get datasets list untuk dashboard management
+     * Route: GET /admin/datasets/management/list
+     */
+    public function getDatasetsList()
+    {
+        try {
+            $configService = new DatasetConfigService();
+            $datasets = $configService->getDatasetsList();
+
+            return response()->json(['success' => true, 'data' => $datasets]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching datasets list: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Show datasets management page
+     * Route: GET /admin/datasets/management
+     */
+    public function management()
+    {
+        return view('admin.datasets.management');
     }
 }

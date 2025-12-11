@@ -59,7 +59,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::prefix('datasets')->name('datasets.')->group(function () {
             Route::get('/ajax-filter', [DashboardController::class, 'ajaxFilter'])->name('ajax-filter');
             Route::get('/ajax-search', [DashboardController::class, 'ajaxSearch'])->name('ajax-search');
-            Route::patch('/{dataset}/update-insight', [DashboardController::class, 'updateInsightType'])->name('update_insight');
+            Route::get('/management', [DashboardController::class, 'management'])->name('management');
+            Route::post('/{datasetId}/sync', [DashboardController::class, 'syncSingleDataset'])->name('sync');
+            Route::post('/{datasetId}/toggle', [DashboardController::class, 'toggleDataset'])->name('toggle');
+            Route::get('/management/list', [DashboardController::class, 'getDatasetsList'])->name('management.list');
             Route::get('/{dataset}', [DashboardController::class, 'show'])->name('show');
             Route::delete('/{dataset}', [DashboardController::class, 'destroy'])->name('destroy');
             Route::get('/{dataset}/edit', [DashboardController::class, 'edit'])->name('edit');
@@ -87,6 +90,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         // Rute Sinkronisasi
         Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
         Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
+
+        // Rute Dataset Management
+        Route::post('/datasets/{datasetId}/toggle', [DashboardController::class, 'toggleDataset'])->name('datasets.toggle');
+        Route::post('/datasets/{datasetId}/sync', [DashboardController::class, 'syncSingleDataset'])->name('datasets.sync');
+        Route::post('/datasets/{datasetId}/update-config', [DashboardController::class, 'updateConfig'])->name('datasets.updateConfig');
 
         Route::get('logs', [SyncLogController::class, 'index'])->name('logs.index');
         Route::get('logs/{log}', [SyncLogController::class, 'show'])->name('logs.show');

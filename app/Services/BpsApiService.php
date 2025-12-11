@@ -38,8 +38,13 @@ class BpsApiService
         try {
             // Kita tambahkan opsi untuk mencegah error SSL acak
             $response = Http::withOptions([
-                'curl' => [CURLOPT_FORBID_REUSE => true],
-            ])->timeout(60)->get($baseUrl);
+                'verify' => false, // Nonaktifkan SSL verification (HANYA UNTUK TESTING!)
+                'curl' => [
+                    CURLOPT_FORBID_REUSE => true,
+                    CURLOPT_CONNECTTIMEOUT => 30, // Connection timeout 30 detik
+                    CURLOPT_TIMEOUT => 120, // Total timeout 120 detik
+                ],
+            ])->timeout(120)->get($baseUrl);
 
             $responseData = $response->json();
 

@@ -22,8 +22,8 @@ class FetchBpsDataCommand extends Command implements ShouldQueue
 {
     use InteractsWithQueue;
 
-    // 1. GANTI SIGNATURE: Terima --log_id
-    protected $signature = 'bps:fetch-data {--log_id=}';
+    // 1. GANTI SIGNATURE: Terima --log_id dan --dataset_id
+    protected $signature = 'bps:fetch-data {--log_id=} {--dataset_id=}';
 
     protected $description = 'Fetch datasets from BPS API based on config targets and store them.';
 
@@ -61,19 +61,36 @@ class FetchBpsDataCommand extends Command implements ShouldQueue
         $countFailed = 0;
 
         try {
-            $targets = config('bps_targets.datasets');
+            // Ambil dataset dari config service (sudah termasuk override)
+            $configService = new \App\Services\DatasetConfigService();
+            $allDatasets = $configService->getAllDatasets();
 
-            if (empty($targets)) {
-                $this->warn('No datasets found in config/bps_targets.php. Exiting.');
+            // Filter: jika ada --dataset_id, hanya proses dataset tersebut
+            $datasetIdFilter = $this->option('dataset_id');
+            if ($datasetIdFilter) {
+                $this->info("Filtering to single dataset: {$datasetIdFilter}");
+                $allDatasets = array_filter($allDatasets, function ($ds) use ($datasetIdFilter) {
+                    return ($ds['id'] ?? null) === $datasetIdFilter;
+                });
+            }
+
+            if (empty($allDatasets)) {
+                $this->warn('No datasets to process. Exiting.');
                 $log->update([
                     'status' => 'gagal',
                     'finished_at' => now(),
-                    'summary_message' => 'Gagal: File config bps_targets.php kosong atau tidak ditemukan.'
+                    'summary_message' => 'Gagal: Tidak ada dataset yang ditemukan.'
                 ]);
                 return 0;
             }
 
-            foreach ($targets as $target) {
+            foreach ($allDatasets as $target) {
+                // Skip jika dataset di-disable
+                if (isset($target['enabled']) && $target['enabled'] === false) {
+                    $this->warn("Skipping disabled dataset: {$target['name']}");
+                    continue;
+                }
+
                 $datasetName = $target['name'] ?? 'Unknown Dataset';
                 $this->info("Processing: {$datasetName}");
 
