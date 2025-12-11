@@ -97,13 +97,23 @@
                             return ($cfg['variable_id'] ?? null) == $dataset->dataset_code;
                         });
                         $configId = $configDataset['id'] ?? null;
-                        $isEnabled = $configDataset['enabled'] ?? true;
+                        $isEnabled = $configDataset['enabled'] ?? false;
+                        
+                        // Jika tidak ada di config, gunakan default tahun 2020-2025
+                        if (!$configDataset) {
+                            $configDataset = [
+                                'tahun_mulai' => 2020,
+                                'tahun_akhir' => date('Y'),
+                                'enabled' => false,
+                                'id' => $dataset->dataset_code, // Gunakan dataset_code sebagai fallback
+                            ];
+                        }
                     @endphp
 
                 </div>
 
                 {{-- ====================== STATUS ENABLE + SYNC ====================== --}}
-                @if($configId)
+                {{-- Tampilkan selalu, tidak bergantung pada $configId --}}
 
                 <div class="border-t pt-6 mt-6">
                     <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
@@ -172,11 +182,8 @@
                         </svg>
                         <span id="syncButtonText">Sync Dataset Sekarang</span>
                     </button>
-
                     <div id="syncMessage" class="mt-2 text-sm hidden"></div>
                 </div>
-
-                @endif
 
 
                 {{-- ====================== ACTION BUTTON ====================== --}}
@@ -201,7 +208,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            const configId = '{{ $configId ?? '' }}';
+            const configId = '{{ $configId ?? $dataset->dataset_code }}';
             if (!configId) return;
 
             const toggleCheckbox = document.getElementById('enableToggle');

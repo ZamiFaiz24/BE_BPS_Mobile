@@ -10,6 +10,7 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 {
     protected BpsDataset $dataset;
     protected ?int $year;
+    protected string $categoryLabel = 'Kategori';
 
     // Settingan Kunci:
     protected string $rowLabelColumn = 'turvar_label'; // Baris = Kecamatan
@@ -21,6 +22,20 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
     {
         $this->dataset = $dataset;
         $this->year = $year ?: $dataset->values()->max('year');
+
+        // Deteksi label kategori yang lebih kontekstual
+        $titleLower = strtolower($dataset->dataset_name);
+        $label = 'Kategori';
+        if (str_contains($titleLower, 'pendidikan')) {
+            $label = 'Tingkat Pendidikan';
+        } elseif (str_contains($titleLower, 'kecamatan')) {
+            $label = 'Kecamatan';
+        } elseif (str_contains($titleLower, 'lapangan pekerjaan')) {
+            $label = 'Lapangan Pekerjaan';
+        } elseif (str_contains($titleLower, 'agama')) {
+            $label = 'Agama';
+        }
+        $this->categoryLabel = $label;
 
         // 1. Definisikan Default Dulu
         $this->rowLabelColumn = 'vervar_label';
@@ -85,7 +100,7 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 
         // 3. Susun Header Final [Tahun, Kecamatan, Dusun, RW, RT]
         // Kita ubah label 'Kategori' jadi 'Kecamatan / Uraian' agar lebih jelas
-        $headers = array_merge(['Tahun', 'Kecamatan'], $pivotHeaders);
+        $headers = array_merge(['Tahun', $this->categoryLabel], $pivotHeaders);
 
         // 4. Grouping Data Berdasarkan Baris (Kecamatan/turvar)
         $grouped = $data->groupBy($this->rowLabelColumn);
@@ -97,7 +112,7 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
 
             $row = [
                 'Tahun' => $this->year,
-                'Kecamatan' => $rowLabel, // Key ini harus sama dengan header di atas
+                $this->categoryLabel => $rowLabel, // Key ini harus sama dengan header di atas
             ];
 
             foreach ($pivotHeaders as $header) {
@@ -136,8 +151,8 @@ class CategoryBasedStatisticHandler implements DatasetHandlerInterface
         $validIndices = [];
 
         foreach ($rows as $index => $row) {
-            // Ambil nama kecamatan dari key 'Kecamatan'
-            $catName = $row['Kecamatan'];
+            // Ambil nama kategori (dinamis) dari key header kedua
+            $catName = $row[$this->categoryLabel];
 
             // Filter "Kabupaten Kebumen" atau "Total" agar grafik tidak jomplang
             if (!in_array(strtolower($catName), $this->excludedLabels)) {

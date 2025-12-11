@@ -62,6 +62,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('/management', [DashboardController::class, 'management'])->name('management');
             Route::post('/{datasetId}/sync', [DashboardController::class, 'syncSingleDataset'])->name('sync');
             Route::post('/{datasetId}/toggle', [DashboardController::class, 'toggleDataset'])->name('toggle');
+            Route::post('/{datasetId}/update-config', [DashboardController::class, 'updateConfig'])->name('updateConfig');
             Route::get('/management/list', [DashboardController::class, 'getDatasetsList'])->name('management.list');
             Route::get('/{dataset}', [DashboardController::class, 'show'])->name('show');
             Route::delete('/{dataset}', [DashboardController::class, 'destroy'])->name('destroy');
@@ -90,11 +91,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         // Rute Sinkronisasi
         Route::post('/sync/all', [DashboardController::class, 'syncAllDatasets'])->name('sync.all');
         Route::post('/sync/manual', [SyncController::class, 'manual'])->name('sync.manual');
-
-        // Rute Dataset Management
-        Route::post('/datasets/{datasetId}/toggle', [DashboardController::class, 'toggleDataset'])->name('datasets.toggle');
-        Route::post('/datasets/{datasetId}/sync', [DashboardController::class, 'syncSingleDataset'])->name('datasets.sync');
-        Route::post('/datasets/{datasetId}/update-config', [DashboardController::class, 'updateConfig'])->name('datasets.updateConfig');
 
         Route::get('logs', [SyncLogController::class, 'index'])->name('logs.index');
         Route::get('logs/{log}', [SyncLogController::class, 'show'])->name('logs.show');

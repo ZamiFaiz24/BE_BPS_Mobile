@@ -263,11 +263,21 @@ class DashboardController extends Controller
             $configService = new DatasetConfigService();
             $dataset = $configService->getDataset($datasetId);
 
+            // Fallback: jika dataset tidak ada di config (dataset baru), cari di DB
             if (!$dataset) {
-                if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                $dbDataset = BpsDataset::where('dataset_code', $datasetId)->first();
+                if ($dbDataset) {
+                    $dataset = [
+                        'id' => $dbDataset->dataset_code,
+                        'name' => $dbDataset->dataset_name,
+                        'enabled' => false,
+                    ];
+                } else {
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                    }
+                    return redirect()->back()->withErrors(['sync_error' => 'Dataset tidak ditemukan.']);
                 }
-                return redirect()->back()->withErrors(['sync_error' => 'Dataset tidak ditemukan.']);
             }
 
             // 3. Cek apakah dataset enabled
@@ -331,11 +341,21 @@ class DashboardController extends Controller
             $configService = new DatasetConfigService();
             $dataset = $configService->getDataset($datasetId);
 
+            // Fallback: jika tidak ada di config (dataset baru), coba ambil dari DB
             if (!$dataset) {
-                if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                $dbDataset = BpsDataset::where('dataset_code', $datasetId)->first();
+                if ($dbDataset) {
+                    $dataset = [
+                        'id' => $dbDataset->dataset_code,
+                        'name' => $dbDataset->dataset_name,
+                        'enabled' => false,
+                    ];
+                } else {
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => false, 'message' => 'Dataset tidak ditemukan.'], 404);
+                    }
+                    return redirect()->back()->withErrors(['error' => 'Dataset tidak ditemukan.']);
                 }
-                return redirect()->back()->withErrors(['error' => 'Dataset tidak ditemukan.']);
             }
 
             // Toggle di database

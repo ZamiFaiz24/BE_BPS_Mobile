@@ -152,30 +152,23 @@
                         </div>
                     </div>
 
-                    {{-- Dataset Status --}}
+                    {{-- Dataset Ter-update (7 hari terakhir) --}}
                     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md">
-                                <x-heroicon-s-chart-bar class="w-8 h-8" />
+                            <div class="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-8 h-8">
+                                    <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z" />
+                                </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-500 mb-1">Dataset Aktif</p>
+                                <p class="text-sm font-medium text-gray-500 mb-1">Dataset Ter-update</p>
                                 @php
-                                    $configService = app('App\Services\DatasetConfigService');
-                                    $allDatasets = $configService->getAllDatasets();
-                                    $enabledCount = collect($allDatasets)->where('enabled', true)->count();
-                                    $totalConfigured = count($allDatasets);
-                                    $percentage = $totalConfigured > 0 ? round(($enabledCount / $totalConfigured) * 100) : 0;
+                                    // Hitung dataset yang ter-update 7 hari terakhir
+                                    $sevenDaysAgo = now()->subDays(7);
+                                    $recentlyUpdated = \App\Models\BpsDataset::where('last_update', '>=', $sevenDaysAgo)->count();
                                 @endphp
-                                <p class="text-3xl font-bold text-gray-900">
-                                    {{ $enabledCount }}<span class="text-xl text-gray-400">/{{ $totalConfigured }}</span>
-                                </p>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-green-600 h-full transition-all duration-300" style="width: {{ $percentage }}%"></div>
-                                    </div>
-                                    <span class="text-xs font-semibold text-gray-600">{{ $percentage }}%</span>
-                                </div>
+                                <p class="text-3xl font-bold text-gray-900">{{ $recentlyUpdated }}</p>
+                                <p class="text-xs text-gray-400 mt-1">Diperbarui 7 hari terakhir</p>
                             </div>
                         </div>
                     </div>

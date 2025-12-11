@@ -516,35 +516,35 @@ return [
             'params'       => ['domain' => '3305'],
         ],
 
-        // // APM 246
-        // [
-        //     'id'           => 'dataset_apm_246',
-        //     'model'        => 'data',
-        //     'name'         => 'Angka Partisipasi Murni (APM) di Kabupaten Kebumen',
-        //     'variable_id'  => 246,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2006,
-        //     'tahun_akhir'  => 2023,
-        //     'insight_type' => 'percent_higher_is_better',
-        //     'category'     => 3,
-        //     'enabled'      => true,
-        //     'params'       => ['domain' => '3305'],
-        // ],
+        // APM 246
+        [
+            'id'           => 'dataset_apm_246',
+            'model'        => 'data',
+            'name'         => 'Angka Partisipasi Murni (APM) di Kabupaten Kebumen',
+            'variable_id'  => 246,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2006,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'percent_higher_is_better',
+            'category'     => 3,
+            'enabled'      => true,
+            'params'       => ['domain' => '3305'],
+        ],
 
-        // // APK 238
-        // [
-        //     'id'           => 'dataset_apk_238',
-        //     'model'        => 'data',
-        //     'name'         => 'Angka Partisipasi Kasar (APK) di Kabupaten Kebumen',
-        //     'variable_id'  => 238,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2006,
-        //     'tahun_akhir'  => 2023,
-        //     'insight_type' => 'percent_higher_is_better',
-        //     'category'     => 3,
-        //     'enabled'      => true,
-        //     'params'       => ['domain' => '3305'],
-        // ],
+        // APK 238
+        [
+            'id'           => 'dataset_apk_238',
+            'model'        => 'data',
+            'name'         => 'Angka Partisipasi Kasar (APK) di Kabupaten Kebumen',
+            'variable_id'  => 238,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2006,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'percent_higher_is_better',
+            'category'     => 3,
+            'enabled'      => true,
+            'params'       => ['domain' => '3305'],
+        ],
 
         // // APS 717
         // [

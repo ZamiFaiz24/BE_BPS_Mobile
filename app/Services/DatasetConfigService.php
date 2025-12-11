@@ -51,6 +51,36 @@ class DatasetConfigService
             $allDatasets[$datasetId] = $dataset;
         }
 
+        // 4. Tambahkan override yang tidak punya entry di config (dataset baru/quick add)
+        foreach ($dbOverrides as $datasetId => $override) {
+            if (isset($allDatasets[$datasetId])) {
+                continue; // sudah ter-merge di atas
+            }
+
+            // Coba ambil info dari DB BpsDataset agar ada nama dan metadata
+            $dbDataset = \App\Models\BpsDataset::where('dataset_code', $datasetId)->first();
+
+            $dataset = [
+                'id' => $datasetId,
+                // Gunakan datasetId sebagai variable_id agar match dengan dataset_code di DB
+                'variable_id' => $datasetId,
+                'enabled' => $override->enabled,
+                '_override' => true,
+                '_override_id' => $override->id,
+                'name' => $dbDataset->dataset_name ?? null,
+                'dataset_name' => $dbDataset->dataset_name ?? null,
+                'subject' => $dbDataset->subject ?? null,
+                'category' => $dbDataset->category ?? null,
+                'unit' => $dbDataset->unit ?? null,
+            ];
+
+            if ($override->config && is_array($override->config)) {
+                $dataset = array_merge($dataset, $override->config);
+            }
+
+            $allDatasets[$datasetId] = $dataset;
+        }
+
         return $allDatasets;
     }
 
