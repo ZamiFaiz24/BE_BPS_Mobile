@@ -4,174 +4,257 @@ namespace App\Services\DatasetHandlers;
 
 use App\Models\BpsDataset;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class SingleValueTimeSeriesHandler implements DatasetHandlerInterface
 {
     protected BpsDataset $dataset;
-    protected Collection $allValues;
-    protected string $unit = '';
-    protected ?string $monthColumn = null; // Properti baru untuk simpan nama kolom bulan
+    protected string $unit;
+    protected ?int $year;
+    protected Collection $dataForYear;
 
-    // Daftar nama bulan untuk deteksi otomatis
-    private array $monthNames = [
-        'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember',
-        'Triwulan I',
-        'Triwulan II',
-        'Triwulan III',
-        'Triwulan IV' // Support Triwulan juga
-    ];
+    // Mode: 'single' (satu nilai per tahun) atau 'multi' (banyak item per tahun)
+    protected string $mode = 'single';
+    protected string $labelColumn = 'vervar_label';
 
     public function __construct(BpsDataset $dataset, $year = null)
     {
         $this->dataset = $dataset;
+        // Ambil tahun terbaru jika user tidak memilih
+        $this->year = $year ?: $dataset->values()->max('year');
 
-        // 1. Ambil semua data (urutkan tahun desc, lalu id desc agar bulan urut Des->Jan)
-        $this->allValues = $dataset->values()
-            ->orderBy('year', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        $sample = $dataset->values()->first();
+        $this->unit = $sample->unit ?? '';
 
-        $firstRow = $this->allValues->first();
-        $this->unit = $firstRow->unit ?? '';
+        // --- DETEKSI MODE ---
+        if ($this->year) {
+            // Ambil data untuk tahun yang dipilih
+            $this->dataForYear = $dataset->values()->where('year', $this->year)->get();
 
-        // 2. DETEKSI APAKAH INI DATA BULANAN?
-        if ($firstRow) {
-            $this->monthColumn = $this->detectPeriodColumn($firstRow);
+            // Cek ada berapa baris data di tahun ini (setelah membuang baris Total/Tahunan)
+            $realDataCount = $this->dataForYear->reject(function ($item) {
+                $label = strtolower($item->vervar_label . $item->turvar_label);
+                return Str::contains($label, ['jumlah', 'total', 'tahunan', 'kabupaten kebumen']);
+            })->count();
+
+            // Jika baris data asli lebih dari 1, berarti ini data Rincian (Bulan/Komponen/Jenis)
+            if ($realDataCount > 1) {
+                $this->mode = 'multi';
+                $this->detectLabelColumn();
+            } else {
+                $this->mode = 'single';
+            }
+        } else {
+            $this->dataForYear = collect();
         }
     }
 
-    /**
-     * Cek apakah ada kolom yang isinya nama bulan
-     */
-    private function detectPeriodColumn($row): ?string
+    private function detectLabelColumn(): void
     {
-        // Cek turvar_label
-        if (in_array($row->turvar_label, $this->monthNames)) {
-            return 'turvar_label';
-        }
-        // Cek vervar_label
-        if (in_array($row->vervar_label, $this->monthNames)) {
-            return 'vervar_label';
-        }
-        // Cek var_label
-        if (in_array($row->var_label, $this->monthNames)) {
-            return 'var_label';
-        }
-        return null; // Bukan data bulanan (Tahunan biasa)
+        // Cari kolom mana yang punya variasi label (vervar vs turvar)
+        $vervarCount = $this->dataForYear->pluck('vervar_label')->unique()->count();
+        $turvarCount = $this->dataForYear->pluck('turvar_label')->unique()->count();
+
+        $this->labelColumn = ($turvarCount > $vervarCount) ? 'turvar_label' : 'vervar_label';
     }
 
     public function getTableData(): array
     {
-        // Jika data bulanan, tambahkan kolom "Periode"
-        $headers = $this->monthColumn ? ['Tahun', 'Periode', 'Nilai'] : ['Tahun', 'Nilai'];
+        // --- SKENARIO 1: DATA RINCIAN (IPM Components / Bulan) ---
+        if ($this->mode === 'multi') {
+            // Tampilkan rincian untuk tahun terpilih
+            $rows = $this->dataForYear->map(function ($item) {
+                return [
+                    'Tahun' => $item->year,
+                    'Uraian' => $item->{$this->labelColumn}, // Label: "Januari" atau "Angka Harapan Hidup"
+                    'Nilai' => number_format($item->value, 2) . ' ' . $item->unit
+                ];
+            });
 
-        $rows = $this->allValues->map(function ($item) {
-            $row = ['Tahun' => $item->year];
-
-            // Jika ada bulan, masukkan ke baris
-            if ($this->monthColumn) {
-                $row['Periode'] = $item->{$this->monthColumn};
+            // Jika Bulan, urutkan logis (Jan-Des), jika tidak biarkan default
+            $isMonthly = $this->isMonthlyData($rows);
+            if ($isMonthly) {
+                $rows = $this->sortMonthlyData($rows);
             }
 
-            $row['Nilai'] = $item->value;
-            return $row;
-        })->all();
+            return [
+                'headers' => ['Tahun', 'Uraian', 'Nilai'],
+                'rows' => $rows
+            ];
+        }
+
+        // --- SKENARIO 2: DATA TUNGGAL (History Trend) ---
+        // Tampilkan list tahun ke belakang
+        $allData = $this->dataset->values()->orderBy('year', 'desc')->get();
+
+        $grouped = $allData->groupBy('year')->map(function ($items) {
+            // Prioritaskan ambil baris "Total" atau "Tahunan" jika ada
+            $totalRow = $items->first(fn($i) => Str::contains(strtolower($i->vervar_label . $i->turvar_label), ['total', 'jumlah', 'tahunan']));
+            return $totalRow ? $totalRow->value : $items->sum('value');
+        });
+
+        $rows = [];
+        foreach ($grouped as $year => $value) {
+            $rows[] = [
+                'Tahun' => $year,
+                'Nilai' => number_format($value, 2) . ' ' . $this->unit
+            ];
+        }
 
         return [
-            'headers' => $headers,
-            'rows' => $rows,
+            'headers' => ['Tahun', 'Nilai'],
+            'rows' => $rows
         ];
     }
 
     public function getChartData(): array
     {
-        // Urutkan dari terlama ke terbaru untuk grafik
-        // Sort by Year ASC, lalu ID ASC (agar Jan->Des)
-        $sortedForChart = $this->allValues->sortBy(['year', 'id']);
+        // --- CHART UNTUK MULTI ITEM (Snapshot Tahun Ini) ---
+        if ($this->mode === 'multi') {
+            // Filter data sampah (Total/Tahunan) agar grafik tidak jomplang
+            $chartItems = $this->dataForYear->reject(function ($item) {
+                $label = strtolower($item->{$this->labelColumn});
+                return Str::contains($label, ['jumlah', 'total', 'tahunan', 'kabupaten kebumen']);
+            });
 
-        // Buat label grafik
-        // Jika Tahunan: "2020", "2021"
-        // Jika Bulanan: "Jan 2020", "Feb 2020"
-        $labels = $sortedForChart->map(function ($item) {
-            if ($this->monthColumn) {
-                // Ambil 3 huruf pertama bulan (Januari -> Jan) biar grafik gak penuh
-                $shortMonth = substr($item->{$this->monthColumn}, 0, 3);
-                return "$shortMonth " . $item->year;
+            $labels = $chartItems->pluck($this->labelColumn)->toArray();
+            $values = $chartItems->pluck('value')->toArray();
+
+            // Cek apakah data Bulanan?
+            $isMonthly = $this->isMonthlyCheck($labels);
+
+            // Jika Bulanan -> LINE CHART (Urutkan Jan-Des)
+            if ($isMonthly) {
+                // Sorting Bulan logic
+                $sorted = $this->sortChartMonthly($labels, $values);
+                return [
+                    'type' => 'line',
+                    'title' => 'Tren Bulanan (' . $this->year . ')',
+                    'labels' => $sorted['labels'],
+                    'datasets' => [[
+                        'label' => $this->unit ?: 'Nilai',
+                        'data' => $sorted['values'],
+                        'borderColor' => '#FF9800', // Oranye
+                        'fill' => false
+                    ]]
+                ];
             }
-            return $item->year;
-        })->toArray();
+
+            // Jika Komponen (IPM/Wisatawan) -> HORIZONTAL BAR
+            return [
+                'type' => 'horizontalBar',
+                'title' => 'Rincian ' . $this->dataset->dataset_name,
+                'labels' => array_values($labels),
+                'datasets' => [[
+                    'label' => $this->unit ?: 'Nilai',
+                    'data' => array_values($values),
+                    'backgroundColor' => '#36A2EB'
+                ]]
+            ];
+        }
+
+        // --- CHART UNTUK SINGLE ITEM (History Trend) ---
+        // Sama seperti kode sebelumnya
+        $allData = $this->dataset->values()->orderBy('year', 'asc')->get();
+        $history = $allData->groupBy('year')->map(function ($items) {
+            $totalRow = $items->first(fn($i) => Str::contains(strtolower($i->vervar_label . $i->turvar_label), ['total', 'jumlah', 'tahunan']));
+            return $totalRow ? $totalRow->value : $items->sum('value');
+        });
 
         return [
             'type' => 'line',
-            'title' => $this->dataset->dataset_name,
-            'labels' => array_values($labels), // Re-index array
-            'datasets' => [
-                [
-                    'label' => $this->unit,
-                    'data' => $sortedForChart->pluck('value')->values()->toArray(),
-                ]
-            ],
+            'title' => 'Tren Tahunan',
+            'labels' => $history->keys()->toArray(),
+            'datasets' => [[
+                'label' => $this->unit ?: 'Nilai',
+                'data' => $history->values()->toArray(),
+                'borderColor' => '#4CAF50',
+                'backgroundColor' => 'rgba(76, 175, 80, 0.1)',
+                'fill' => true
+            ]]
         ];
     }
 
     public function getInsightData(): array
     {
-        if ($this->allValues->isEmpty()) {
-            return [['title' => 'Info', 'value' => '-', 'description' => 'Data tidak tersedia.']];
-        }
+        if ($this->mode === 'multi') {
+            $maxItem = $this->dataForYear->sortByDesc('value')->first();
+            $minItem = $this->dataForYear->sortBy('value')->first();
 
-        // Data terbaru (Paling atas)
-        $latest = $this->allValues->first();
-
-        // Label waktu (Tahun 2024 atau Januari 2024)
-        $timeLabel = $latest->year;
-        if ($this->monthColumn) {
-            $timeLabel = $latest->{$this->monthColumn} . " " . $latest->year;
-        }
-
-        $insights = [];
-        $insights[] = [
-            'title' => 'Nilai Terbaru',
-            'value' => number_format($latest->value) . " " . $this->unit,
-            'description' => "Data periode $timeLabel",
-        ];
-
-        // Bandingkan dengan periode sebelumnya (Bulan lalu / Tahun lalu)
-        if ($this->allValues->count() > 1) {
-            $previous = $this->allValues->get(1); // Data kedua
-
-            $change = $latest->value - $previous->value;
-            $sign = $change > 0 ? 'Naik' : ($change < 0 ? 'Turun' : 'Tetap');
-            $icon = $change > 0 ? '+' : '';
-
-            $prevLabel = $previous->year;
-            if ($this->monthColumn) {
-                $prevLabel = substr($previous->{$this->monthColumn}, 0, 3);
-            }
-
-            $insights[] = [
-                'title' => 'Perubahan',
-                'value' => sprintf("%s %s", $icon, number_format($change)),
-                'description' => "$sign dibanding $prevLabel",
+            return [
+                [
+                    'title' => 'Tertinggi',
+                    'value' => $maxItem->{$this->labelColumn} ?? '-',
+                    'description' => "Nilai tertinggi pada komponen ini (" . number_format($maxItem->value ?? 0) . ")."
+                ]
             ];
         }
 
-        return $insights;
+        // Insight Trend (Logic lama)
+        $chartData = $this->getChartData();
+        $values = $chartData['datasets'][0]['data'];
+        $years = $chartData['labels'];
+        $lastVal = end($values);
+        $prevVal = prev($values);
+
+        $growth = ($prevVal > 0) ? (($lastVal - $prevVal) / $prevVal) * 100 : 0;
+        $trend = $growth >= 0 ? "Naik " . number_format($growth, 1) . "%" : "Turun " . number_format(abs($growth), 1) . "%";
+
+        return [[
+            'title' => 'Tren Terbaru',
+            'value' => $trend,
+            'description' => "Perbandingan tahun {$this->year} dengan tahun sebelumnya."
+        ]];
     }
 
     public function getHistoryData(): array
     {
-        return $this->getChartData();
+        return [];
+    }
+
+    // --- HELPER FUNCTION UNTUK BULAN ---
+
+    private function isMonthlyCheck(array $labels): bool
+    {
+        foreach ($labels as $lbl) {
+            if (Str::contains(strtolower($lbl), ['januari', 'februari', 'maret', 'april'])) return true;
+        }
+        return false;
+    }
+
+    private function isMonthlyData($rows): bool
+    {
+        // Cek baris pertama kolom Uraian
+        $first = $rows->first();
+        return $first && Str::contains(strtolower($first['Uraian']), ['januari', 'februari', 'maret']);
+    }
+
+    private function sortMonthlyData($rows)
+    {
+        $months = array_flip(['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember', 'tahunan']);
+        return $rows->sortBy(function ($row) use ($months) {
+            return $months[strtolower($row['Uraian'])] ?? 99;
+        })->values();
+    }
+
+    private function sortChartMonthly($labels, $values)
+    {
+        $monthsOrder = array_flip(['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember']);
+
+        $combined = [];
+        foreach ($labels as $i => $lbl) {
+            $combined[] = ['label' => $lbl, 'value' => $values[$i]];
+        }
+
+        usort($combined, function ($a, $b) use ($monthsOrder) {
+            $idxA = $monthsOrder[strtolower($a['label'])] ?? 99;
+            $idxB = $monthsOrder[strtolower($b['label'])] ?? 99;
+            return $idxA <=> $idxB;
+        });
+
+        return [
+            'labels' => array_column($combined, 'label'),
+            'values' => array_column($combined, 'value')
+        ];
     }
 }
