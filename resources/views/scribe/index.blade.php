@@ -124,7 +124,7 @@ GET /api/dataset-units/21</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-homepage-insights-indicators">
                                 <a href="#endpoints-GETapi-homepage-insights-indicators">Ambil nilai terbaru dari multiple datasets untuk insight
-Contoh: /api/insights/indicators</a>
+Contoh: /api/indicators</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-homepage-grid">
                                 <a href="#endpoints-GETapi-homepage-grid">Get grid menu of statistics categories with dataset counts</a>
@@ -3033,14 +3033,14 @@ Contoh: /api/insights/indicators</h2>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/homepage/insights/indicators" \
+    --get "http://localhost/api/homepage/indicators" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/homepage/insights/indicators"
+    "http://localhost/api/homepage/indicators"
 );
 
 const headers = {
@@ -3119,8 +3119,8 @@ Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-GETapi-homepage-insights-indicators" data-method="GET"
-      data-path="api/homepage/insights/indicators"
+<form id="form-GETapi-homepage-indicators" data-method="GET"
+      data-path="api/homepage/indicators"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -3148,7 +3148,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-green">GET</small>
-            <b><code>api/homepage/insights/indicators</code></b>
+            <b><code>api/homepage/indicators</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">

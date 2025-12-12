@@ -53,7 +53,7 @@ Route::prefix('content')->group(function () {
 
 Route::prefix('homepage')->group(function () {
 
-    Route::get('/insights/indicators', [BpsDataController::class, 'getInsightIndicators']);
+    Route::get('/indicators', [BpsDataController::class, 'getInsightIndicators']);
 
     // Grid endpoints (letakkan sebelum routes dengan parameter dinamis)
     Route::get('grid', [BpsDatasetController::class, 'getGrid']);

@@ -709,10 +709,12 @@ class BpsDatasetController extends Controller
 
             // Build query: match by subject ATAU keyword, tapi preferensikan subject
             $query = BpsDataset::query();
+            $hasMatchingCriteria = false;
 
             // 1. Jika subject !== null, gunakan subject match
             if ($slotConfig['subject'] !== null) {
                 $query->where('subject', $slotConfig['subject']);
+                $hasMatchingCriteria = true;
             }
             // 2. Jika subject === null dan ada keywords, gunakan keywords
             elseif (!empty($slotConfig['keywords'])) {
@@ -722,6 +724,17 @@ class BpsDatasetController extends Controller
                         $q->orWhere('dataset_name', 'like', '%' . $kw . '%');
                     }
                 });
+                $hasMatchingCriteria = true;
+            }
+
+            // Jika tidak ada kriteria matching (subject=null dan keywords=[]), return empty
+            if (!$hasMatchingCriteria) {
+                return response()->json([
+                    'status' => 'success',
+                    'category' => $slotConfig['title'],
+                    'datasets' => [],
+                    'message' => 'Slot ini tidak memiliki kriteria matching'
+                ]);
             }
 
             $datasets = $query->select($fields)->get();

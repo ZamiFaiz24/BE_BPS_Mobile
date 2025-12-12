@@ -57,7 +57,7 @@ class BpsDataController extends Controller
     /**
      * Ambil nilai terbaru dari setiap grid kategori untuk insight
      * Otomatis mengambil dataset pertama dari setiap kategori grid
-     * GET /api/homepage/insights/indicators
+     * GET /api/homepage/indicators
      */
     public function getInsightIndicators()
     {
