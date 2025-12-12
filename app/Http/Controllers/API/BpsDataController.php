@@ -55,48 +55,67 @@ class BpsDataController extends Controller
     }
 
     /**
-     * Ambil nilai terbaru dari multiple datasets untuk insight
-     * Contoh: /api/insights/indicators
+     * Ambil nilai terbaru dari setiap grid kategori untuk insight
+     * Otomatis mengambil dataset pertama dari setiap kategori grid
+     * GET /api/homepage/insights/indicators
      */
     public function getInsightIndicators()
     {
-        // Define dataset yang akan diambil untuk insight (sesuaikan dengan ID di database Anda)
-        // Format: 'key_untuk_fe' => dataset_id
-        $datasetIds = [
-            'angkatan_kerja' => 21,          // Penduduk Berumur 15 Tahun Ke Atas yang Termasuk Angkatan Kerja
-            'bencana_alam' => 22,            // Jumlah Kejadian Bencana Alam
-            'dusun_rw_rt' => 23,             // Jumlah Dusun, RW, dan RT
-            'beban_ketergantungan' => 24,    // Angka Beban Ketergantungan
-        ];
+        // Ambil GRID_SLOTS dari BpsDatasetController
+        $gridSlots = (new BpsDatasetController())->getGridSlots();
 
         $result = [];
 
-        foreach ($datasetIds as $key => $datasetId) {
-            // Cari dataset
-            $dataset = BpsDataset::find($datasetId);
+        foreach ($gridSlots as $slug => $slotConfig) {
+            // Skip slot 'others' karena tidak punya kriteria spesifik
+            if ($slug === 'others') continue;
+
+            // Gunakan logika yang sama dengan getGridDetail untuk mencari dataset
+            $query = BpsDataset::query();
+
+            // 1. Prioritas UTAMA: Match by subject (kalau subject ada dan tidak null)
+            if ($slotConfig['subject'] !== null) {
+                $query->where('subject', $slotConfig['subject']);
+            }
+            // 2. Fallback: Match by keywords (kalau subject null dan ada keywords)
+            elseif (!empty($slotConfig['keywords'])) {
+                $query->where(function ($q) use ($slotConfig) {
+                    foreach ($slotConfig['keywords'] as $kw) {
+                        if ($kw === '') continue;
+                        $q->orWhere('dataset_name', 'like', '%' . $kw . '%');
+                    }
+                });
+            }
+
+            // Ambil dataset PERTAMA yang cocok
+            $dataset = $query->first();
 
             if ($dataset) {
-                // Ambil nilai terbaru (latest value) beserta unitnya
+                // Ambil nilai terbaru (latest value)
                 $latestValue = DB::table('bps_datavalue')
-                    ->where('dataset_id', $datasetId)
+                    ->where('dataset_id', $dataset->id)
                     ->orderBy('year', 'desc')
                     ->orderBy('id', 'desc')
                     ->first();
 
-                // Store hasil
-                $result[$key] = [
-                    'dataset_id' => $datasetId,
-                    'dataset_name' => $dataset->dataset_name ?? null,
+                $result[$slug] = [
+                    'slug' => $slug,
+                    'category_title' => $slotConfig['title'],
+                    'dataset_id' => $dataset->id,
+                    'dataset_code' => $dataset->dataset_code,
+                    'dataset_name' => $dataset->dataset_name,
                     'value' => $latestValue?->value ?? null,
                     'year' => $latestValue?->year ?? null,
-                    'unit' => $latestValue?->unit ?? null,  // Ambil dari bps_datavalue
+                    'unit' => $latestValue?->unit ?? null,
                 ];
             }
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => $result,
+            'message' => 'Indicators retrieved from grid categories',
+            'data' => array_values($result), // Reset array keys untuk frontend
+            'total_indicators' => count($result),
             'timestamp' => now(),
         ]);
     }

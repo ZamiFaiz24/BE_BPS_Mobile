@@ -46,72 +46,72 @@ class BpsDatasetController extends Controller
      * Urutan di array ini menentukan urutan tampilan di HP.
      */
     private const GRID_SLOTS = [
-        // Baris 1
+        // Baris 1 - Mapping disesuaikan dengan subjects yang SEBENARNYA ada di database
         'kependudukan' => [
-            'title'    => 'Penduduk', // Judul di HP
-            'subject'  => 'Penduduk', // Subject di Database (Prioritas 2)
-            'keywords' => ['penduduk', 'warga', 'demografi', 'kepadatan'] // Kata kunci (Prioritas 1)
+            'title'    => 'Penduduk',
+            'subject'  => 'Kependudukan dan migrasi', // Subject sesuai DB
+            'keywords' => [] // Cukup subject match
         ],
         'tenaga-kerja' => [
             'title'    => 'Tenaga Kerja',
-            'subject'  => 'Tenaga Kerja',
-            'keywords' => ['tenaga kerja', 'pekerja', 'buruh']
+            'subject'  => 'Tenaga Kerja', // Subject sesuai DB
+            'keywords' => [] // Cukup subject match
         ],
         'pengangguran' => [
             'title'    => 'Pengangguran',
-            'subject'  => null, // Set null biar fokus cari keyword saja
+            'subject'  => null, // Tidak ada subject terpisah
             'keywords' => ['pengangguran', 'tpak', 'tpt', 'tidak bekerja']
         ],
 
         // Baris 2
         'kemiskinan' => [
             'title'    => 'Kemiskinan',
-            'subject'  => 'Kemiskinan',
-            'keywords' => ['kemiskinan', 'miskin', 'garis kemiskinan']
+            'subject'  => null, // Tidak ada di DB
+            'keywords' => ['kemiskinan', 'kedalaman kemiskinan', 'keparahan kemiskinan', 'headcount', 'poverty'] // Keywords untuk cari dataset kemiskinan
         ],
         'rasio-gini' => [
             'title'    => 'Rasio GINI',
-            'subject'  => null, // Biasanya ini sub-bab Kemiskinan, jadi kita cari via keyword
-            'keywords' => ['gini', 'ketimpangan', 'gini ratio']
+            'subject'  => null,
+            'keywords' => ['gini', 'ketimpangan', 'rasio gini', 'inequality'] // Keywords spesifik untuk GINI
         ],
         'ipm' => [
             'title'    => 'IPM',
-            'subject'  => 'IPM',
-            'keywords' => ['ipm', 'pembangunan manusia', 'hdi']
+            'subject'  => null, // Tidak ada di DB
+            'keywords' => ['ipm', 'indeks pembangunan manusia', 'hdi', 'human development'] // Keywords untuk cari dataset IPM
         ],
 
         // Baris 3
         'inflasi' => [
             'title'    => 'Inflasi',
-            'subject'  => 'Inflasi', // Kadang masuk Ekonomi
-            'keywords' => ['inflasi', 'ihk', 'harga konsumen']
+            'subject'  => null, // Tidak ada di DB
+            'keywords' => ['inflasi', 'inflasi umum', 'laju inflasi', 'inflation'] // Keywords untuk cari dataset Inflasi
         ],
         'ekonomi' => [
             'title'    => 'Ekonomi',
-            'subject'  => 'Ekonomi',
-            'keywords' => ['ekonomi', 'pertumbuhan', 'laju pertumbuhan']
+            'subject'  => null, // Kosongkan untuk sekarang
+            'keywords' => [] // Tidak ada keywords - skip grid ini
         ],
         'pdrb' => [
             'title'    => 'PDRB',
-            'subject'  => 'PDRB', // Kadang masuk Neraca Wilayah
-            'keywords' => ['pdrb', 'produk domestik', 'adhb', 'adhk']
+            'subject'  => null, // Tidak ada subject terpisah
+            'keywords' => ['pdrb', 'neraca ekonomi', 'produk domestik bruto', 'gdp'] // Match ke "Neraca Ekonomi"
         ],
 
         // Baris 4
         'pendidikan' => [
             'title'    => 'Pendidikan',
-            'subject'  => 'Pendidikan',
-            'keywords' => ['pendidikan', 'sekolah', 'melek huruf', 'aps', 'apk', 'apm']
+            'subject'  => 'Pendidikan', // Subject sesuai DB
+            'keywords' => [] // Cukup subject match
         ],
         'perumahan' => [
             'title'    => 'Perumahan',
-            'subject'  => 'Perumahan',
-            'keywords' => ['perumahan', 'tempat tinggal', 'bangunan', 'lantai', 'dinding']
+            'subject'  => 'Perumahan', // Subject sesuai DB
+            'keywords' => [] // Cukup subject match
         ],
         'pertanian' => [
             'title'    => 'Pertanian',
-            'subject'  => 'Pertanian',
-            'keywords' => ['pertanian', 'padi', 'palawija', 'holtikultura', 'luas panen']
+            'subject'  => 'Pertanian', // Subject sesuai DB
+            'keywords' => [] // Cukup subject match
         ]
     ];
 
@@ -132,6 +132,14 @@ class BpsDatasetController extends Controller
     private function getCategoryName($categoryId)
     {
         return self::CATEGORY_MAPPING[$categoryId] ?? (string)$categoryId;
+    }
+
+    /**
+     * Helper method untuk expose GRID_SLOTS (digunakan oleh controller lain)
+     */
+    public function getGridSlots()
+    {
+        return self::GRID_SLOTS;
     }
 
     /**
@@ -590,9 +598,9 @@ class BpsDatasetController extends Controller
                 'dataset_count' => 0,
             ];
 
-            // --- LOGIC PERBAIKAN DI SINI ---
+            // --- LOGIC MATCHING YANG BARU (Prioritas: Subject > Keywords) ---
             foreach ($datasets as $ds) {
-                $placed = false; // Penanda apakah dataset ini sudah masuk minimal 1 slot
+                $placed = false;
 
                 $name = strtolower($ds->dataset_name ?? '');
                 $subject = strtolower($ds->subject ?? '');
@@ -600,39 +608,33 @@ class BpsDatasetController extends Controller
                 foreach (self::GRID_SLOTS as $slug => $cfg) {
                     $isMatch = false;
 
-                    // 1. Cek Keywords (Prioritas)
-                    if (!empty($cfg['keywords'])) {
-                        foreach ($cfg['keywords'] as $kw) {
-                            if ($kw !== '' && str_contains($name, strtolower($kw))) {
-                                $isMatch = true;
-                                break; // Ketemu satu keyword cocok di slot ini, lanjut
-                            }
-                        }
-                    }
-
-                    // 2. Cek Subject (Jika belum match via keyword)
-                    // Logikanya: Jika Subject DB sama dengan Subject Config, anggap cocok
-                    if (!$isMatch && !empty($cfg['subject'])) {
+                    // 1. Prioritas UTAMA: Cek Subject (Exact Match)
+                    // Jika subject !== null, gunakan subject matching saja
+                    if ($cfg['subject'] !== null) {
                         if ($subject === strtolower($cfg['subject'])) {
                             $isMatch = true;
                         }
                     }
+                    // 2. Fallback: Jika subject === null dan ada keywords, gunakan keywords
+                    else if (!empty($cfg['keywords'])) {
+                        foreach ($cfg['keywords'] as $kw) {
+                            if ($kw !== '' && str_contains($name, strtolower($kw))) {
+                                $isMatch = true;
+                                break;
+                            }
+                        }
+                    }
 
-                    // Jika COCOK, tambahkan hitungan
+                    // Jika cocok, tambahkan ke slot ini
                     if ($isMatch) {
                         $slots[$slug]['dataset_count']++;
                         $placed = true;
-
-                        // PERUBAHAN PENTING:
-                        // Kita HAPUS 'break 2' di sini.
-                        // Biarkan loop lanjut ke slot berikutnya.
-                        // Efeknya: Dataset "Pengangguran" akan terhitung di menu "Pengangguran" 
-                        // DAN mungkin juga terhitung di menu "Tenaga Kerja".
-                        // Ini justru bagus agar user bisa menemukannya di kedua tempat.
+                        break; // PENTING: Berhenti setelah menemukan slot pertama yang cocok
+                        // Ini mencegah duplikasi dataset di beberapa slot
                     }
                 }
 
-                // Jika sama sekali tidak masuk kategori manapun, masukkan ke Others
+                // Jika tidak cocok dengan kategori apapun, masuk ke 'others'
                 if (!$placed) {
                     $slots['others']['dataset_count']++;
                 }
@@ -705,17 +707,16 @@ class BpsDatasetController extends Controller
                 array_unshift($fields, 'id');
             }
 
-            // Build query: match by keywords OR subject
+            // Build query: match by subject ATAU keyword, tapi preferensikan subject
             $query = BpsDataset::query();
 
-            // Apply subject match if provided
-            if (!empty($slotConfig['subject'])) {
+            // 1. Jika subject !== null, gunakan subject match
+            if ($slotConfig['subject'] !== null) {
                 $query->where('subject', $slotConfig['subject']);
             }
-
-            // Also attempt to include datasets matching any keyword in name
-            if (!empty($slotConfig['keywords'])) {
-                $query->orWhere(function ($q) use ($slotConfig) {
+            // 2. Jika subject === null dan ada keywords, gunakan keywords
+            elseif (!empty($slotConfig['keywords'])) {
+                $query->where(function ($q) use ($slotConfig) {
                     foreach ($slotConfig['keywords'] as $kw) {
                         if ($kw === '') continue;
                         $q->orWhere('dataset_name', 'like', '%' . $kw . '%');
