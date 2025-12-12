@@ -122,9 +122,10 @@ GET /api/dataset-units/21</a>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-content-publications">
                                 <a href="#endpoints-GETapi-content-publications">Get Publications with pagination, filtering, and sorting</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-homepage-insights-indicators">
-                                <a href="#endpoints-GETapi-homepage-insights-indicators">Ambil nilai terbaru dari multiple datasets untuk insight
-Contoh: /api/indicators</a>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-homepage-indicators">
+                                <a href="#endpoints-GETapi-homepage-indicators">Ambil nilai terbaru dari setiap grid kategori untuk insight
+Otomatis mengambil dataset pertama dari setiap kategori grid
+GET /api/homepage/indicators</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-homepage-grid">
                                 <a href="#endpoints-GETapi-homepage-grid">Get grid menu of statistics categories with dataset counts</a>
@@ -158,7 +159,7 @@ Contoh: /api/indicators</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: December 9, 2025</li>
+        <li>Last updated: December 12, 2025</li>
     </ul>
 </div>
 
@@ -1088,10 +1089,8 @@ access-control-allow-origin: *
         {
             &quot;dataset_id&quot;: 31,
             &quot;dataset_name&quot;: &quot;Indeks Kedalaman Kemiskinan (P1) (Persen) di Kabupaten Kebumen&quot;,
-            &quot;units&quot;: [
-                &quot;Persen&quot;
-            ],
-            &quot;unit_count&quot;: 1
+            &quot;units&quot;: [],
+            &quot;unit_count&quot;: 0
         },
         {
             &quot;dataset_id&quot;: 32,
@@ -1104,10 +1103,8 @@ access-control-allow-origin: *
         {
             &quot;dataset_id&quot;: 33,
             &quot;dataset_name&quot;: &quot;[Metode Baru] Indeks Pembangunan Manusia Kabupaten Kebumen&quot;,
-            &quot;units&quot;: [
-                &quot;Indeks&quot;
-            ],
-            &quot;unit_count&quot;: 1
+            &quot;units&quot;: [],
+            &quot;unit_count&quot;: 0
         },
         {
             &quot;dataset_id&quot;: 34,
@@ -1124,9 +1121,21 @@ access-control-allow-origin: *
                 &quot;Nilai&quot;
             ],
             &quot;unit_count&quot;: 1
+        },
+        {
+            &quot;dataset_id&quot;: 36,
+            &quot;dataset_name&quot;: &quot;Angka Partisipasi Murni (APM) di Kabupaten Kebumen&quot;,
+            &quot;units&quot;: [],
+            &quot;unit_count&quot;: 0
+        },
+        {
+            &quot;dataset_id&quot;: 37,
+            &quot;dataset_name&quot;: &quot;Angka Partisipasi Kasar (APK) di Kabupaten Kebumen&quot;,
+            &quot;units&quot;: [],
+            &quot;unit_count&quot;: 0
         }
     ],
-    &quot;total_datasets&quot;: 27
+    &quot;total_datasets&quot;: 29
 }</code>
  </pre>
     </span>
@@ -3019,15 +3028,16 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-GETapi-homepage-insights-indicators">Ambil nilai terbaru dari multiple datasets untuk insight
-Contoh: /api/insights/indicators</h2>
+                    <h2 id="endpoints-GETapi-homepage-indicators">Ambil nilai terbaru dari setiap grid kategori untuk insight
+Otomatis mengambil dataset pertama dari setiap kategori grid
+GET /api/homepage/indicators</h2>
 
 <p>
 </p>
 
 
 
-<span id="example-requests-GETapi-homepage-insights-indicators">
+<span id="example-requests-GETapi-homepage-indicators">
 <blockquote>Example request:</blockquote>
 
 
@@ -3055,7 +3065,7 @@ fetch(url, {
 
 </span>
 
-<span id="example-responses-GETapi-homepage-insights-indicators">
+<span id="example-responses-GETapi-homepage-indicators">
             <blockquote>
             <p>Example response (200):</p>
         </blockquote>
@@ -3070,50 +3080,114 @@ access-control-allow-origin: *
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;data&quot;: {
-        &quot;angkatan_kerja&quot;: {
-            &quot;dataset_id&quot;: 21,
-            &quot;dataset_name&quot;: &quot;Penduduk Berumur 15 Tahun Ke Atas yang Termasuk Angkatan Kerja Menurut Pendidikan Tertinggi yang Ditamatkan dan Kegiatan Selama Seminggu yang Lalu di Kabupaten Kebumen&quot;,
-            &quot;value&quot;: 94.89,
-            &quot;year&quot;: 2023,
+    &quot;message&quot;: &quot;Indicators retrieved from grid categories&quot;,
+    &quot;data&quot;: [
+        {
+            &quot;slug&quot;: &quot;kependudukan&quot;,
+            &quot;category_title&quot;: &quot;Penduduk&quot;,
+            &quot;dataset_id&quot;: 5,
+            &quot;dataset_code&quot;: &quot;1873&quot;,
+            &quot;dataset_name&quot;: &quot;Jumlah Penduduk Menurut Kelompok Umur dan Jenis Kelamin di Provinsi Jawa Tengah&quot;,
+            &quot;value&quot;: 37892283,
+            &quot;year&quot;: 2024,
+            &quot;unit&quot;: &quot;Jiwa&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;tenaga-kerja&quot;,
+            &quot;category_title&quot;: &quot;Tenaga Kerja&quot;,
+            &quot;dataset_id&quot;: 6,
+            &quot;dataset_code&quot;: &quot;644&quot;,
+            &quot;dataset_name&quot;: &quot;Tingkat Pengangguran Terbuka Menurut Jenis Kelamin di Kabupaten Kebumen (Persen)&quot;,
+            &quot;value&quot;: 5.07,
+            &quot;year&quot;: 2024,
             &quot;unit&quot;: &quot;Persen&quot;
         },
-        &quot;bencana_alam&quot;: {
-            &quot;dataset_id&quot;: 22,
-            &quot;dataset_name&quot;: &quot;Jumlah Kejadian Bencana Alam Menurut Kecamatan di Kabupaten Kebumen&quot;,
-            &quot;value&quot;: 89,
-            &quot;year&quot;: 2023,
-            &quot;unit&quot;: &quot;Kejadian&quot;
-        },
-        &quot;dusun_rw_rt&quot;: {
-            &quot;dataset_id&quot;: 23,
-            &quot;dataset_name&quot;: &quot;Jumlah Dusun, Rukun Warga (RW), dan Rukun Tetangga (RT)  Menurut Kecamatan di Kabupaten Kebumen&quot;,
-            &quot;value&quot;: 7288,
-            &quot;year&quot;: 2023,
-            &quot;unit&quot;: &quot;Unit&quot;
-        },
-        &quot;beban_ketergantungan&quot;: {
-            &quot;dataset_id&quot;: 24,
-            &quot;dataset_name&quot;: &quot;Angka Beban Ketergantungan di Kabupaten Kebumen&quot;,
-            &quot;value&quot;: 46.38,
-            &quot;year&quot;: 2022,
+        {
+            &quot;slug&quot;: &quot;pengangguran&quot;,
+            &quot;category_title&quot;: &quot;Pengangguran&quot;,
+            &quot;dataset_id&quot;: 6,
+            &quot;dataset_code&quot;: &quot;644&quot;,
+            &quot;dataset_name&quot;: &quot;Tingkat Pengangguran Terbuka Menurut Jenis Kelamin di Kabupaten Kebumen (Persen)&quot;,
+            &quot;value&quot;: 5.07,
+            &quot;year&quot;: 2024,
             &quot;unit&quot;: &quot;Persen&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;kemiskinan&quot;,
+            &quot;category_title&quot;: &quot;Kemiskinan&quot;,
+            &quot;dataset_id&quot;: 31,
+            &quot;dataset_code&quot;: &quot;289&quot;,
+            &quot;dataset_name&quot;: &quot;Indeks Kedalaman Kemiskinan (P1) (Persen) di Kabupaten Kebumen&quot;,
+            &quot;value&quot;: 1.95,
+            &quot;year&quot;: 2025,
+            &quot;unit&quot;: &quot;&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;rasio-gini&quot;,
+            &quot;category_title&quot;: &quot;Rasio GINI&quot;,
+            &quot;dataset_id&quot;: 30,
+            &quot;dataset_code&quot;: &quot;687&quot;,
+            &quot;dataset_name&quot;: &quot;Ukuran Ketimpangan Gini Rasio di Kabupaten Kebumen&quot;,
+            &quot;value&quot;: 0.333,
+            &quot;year&quot;: 2023,
+            &quot;unit&quot;: &quot;Indeks&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;ipm&quot;,
+            &quot;category_title&quot;: &quot;IPM&quot;,
+            &quot;dataset_id&quot;: 33,
+            &quot;dataset_code&quot;: &quot;111&quot;,
+            &quot;dataset_name&quot;: &quot;[Metode Baru] Indeks Pembangunan Manusia Kabupaten Kebumen&quot;,
+            &quot;value&quot;: 71.93,
+            &quot;year&quot;: 2024,
+            &quot;unit&quot;: &quot;&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;ekonomi&quot;,
+            &quot;category_title&quot;: &quot;Ekonomi&quot;,
+            &quot;dataset_id&quot;: 5,
+            &quot;dataset_code&quot;: &quot;1873&quot;,
+            &quot;dataset_name&quot;: &quot;Jumlah Penduduk Menurut Kelompok Umur dan Jenis Kelamin di Provinsi Jawa Tengah&quot;,
+            &quot;value&quot;: 37892283,
+            &quot;year&quot;: 2024,
+            &quot;unit&quot;: &quot;Jiwa&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;pdrb&quot;,
+            &quot;category_title&quot;: &quot;PDRB&quot;,
+            &quot;dataset_id&quot;: 11,
+            &quot;dataset_code&quot;: &quot;840&quot;,
+            &quot;dataset_name&quot;: &quot;Distribusi Produk Domestik Regional Bruto (PDRB) Triwulanan Menurut Pengeluaran Atas Dasar Harga Berlaku Kabupaten Kebumen&quot;,
+            &quot;value&quot;: 100,
+            &quot;year&quot;: 2025,
+            &quot;unit&quot;: &quot;Persen&quot;
+        },
+        {
+            &quot;slug&quot;: &quot;pendidikan&quot;,
+            &quot;category_title&quot;: &quot;Pendidikan&quot;,
+            &quot;dataset_id&quot;: 36,
+            &quot;dataset_code&quot;: &quot;246&quot;,
+            &quot;dataset_name&quot;: &quot;Angka Partisipasi Murni (APM) di Kabupaten Kebumen&quot;,
+            &quot;value&quot;: 71.05,
+            &quot;year&quot;: 2023,
+            &quot;unit&quot;: &quot;&quot;
         }
-    },
-    &quot;timestamp&quot;: &quot;2025-12-09T03:13:05.495980Z&quot;
+    ],
+    &quot;total_indicators&quot;: 9,
+    &quot;timestamp&quot;: &quot;2025-12-12T03:03:38.553406Z&quot;
 }</code>
  </pre>
     </span>
-<span id="execution-results-GETapi-homepage-insights-indicators" hidden>
+<span id="execution-results-GETapi-homepage-indicators" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-GETapi-homepage-insights-indicators"></span>:
+                id="execution-response-status-GETapi-homepage-indicators"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-homepage-insights-indicators"
+    <pre class="json"><code id="execution-response-content-GETapi-homepage-indicators"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-GETapi-homepage-insights-indicators" hidden>
+<span id="execution-error-GETapi-homepage-indicators" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-homepage-insights-indicators">
+    <pre><code id="execution-error-message-GETapi-homepage-indicators">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
@@ -3125,22 +3199,22 @@ You can check the Dev Tools console for debugging information.</code></pre>
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-homepage-insights-indicators', this);">
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-homepage-indicators', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-homepage-insights-indicators"
-                    onclick="tryItOut('GETapi-homepage-insights-indicators');">Try it out ⚡
+                    id="btn-tryout-GETapi-homepage-indicators"
+                    onclick="tryItOut('GETapi-homepage-indicators');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-homepage-insights-indicators"
-                    onclick="cancelTryOut('GETapi-homepage-insights-indicators');" hidden>Cancel 🛑
+                    id="btn-canceltryout-GETapi-homepage-indicators"
+                    onclick="cancelTryOut('GETapi-homepage-indicators');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-homepage-insights-indicators"
+                    id="btn-executetryout-GETapi-homepage-indicators"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -3157,7 +3231,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-homepage-insights-indicators"
+                              name="Content-Type"                data-endpoint="GETapi-homepage-indicators"
                value="application/json"
                data-component="header">
     <br>
@@ -3169,7 +3243,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-homepage-insights-indicators"
+                              name="Accept"                data-endpoint="GETapi-homepage-indicators"
                value="application/json"
                data-component="header">
     <br>
