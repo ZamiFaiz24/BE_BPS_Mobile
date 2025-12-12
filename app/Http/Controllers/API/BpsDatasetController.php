@@ -709,10 +709,10 @@ class BpsDatasetController extends Controller
             $fieldsParam = $request->query('fields');
             if ($fieldsParam) {
                 $fields = array_map('trim', explode(',', $fieldsParam));
-                $allowedFields = ['id', 'dataset_code', 'dataset_name', 'updated_at', 'subject', 'category'];
+                $allowedFields = ['id', 'dataset_code', 'dataset_name', 'last_update', 'subject', 'category'];
                 $fields = array_intersect($fields, $allowedFields);
             } else {
-                $fields = ['id', 'dataset_code', 'dataset_name', 'updated_at', 'subject'];
+                $fields = ['id', 'dataset_code', 'dataset_name', 'last_update', 'subject'];
             }
 
             if (!in_array('id', $fields)) {
@@ -753,10 +753,13 @@ class BpsDatasetController extends Controller
 
             $gridDetail = $datasets->map(function ($dataset) {
                 $result = $dataset->toArray();
-                if (isset($result['updated_at'])) {
-                    $result['last_update'] = $result['updated_at'] ? \Carbon\Carbon::parse($result['updated_at'])->format('Y-m-d') : null;
-                    unset($result['updated_at']);
+                // Format last_update dari BPS database (bukan updated_at)
+                if (isset($result['last_update'])) {
+                    $result['last_update'] = $result['last_update'] ? \Carbon\Carbon::parse($result['last_update'])->format('Y-m-d') : null;
                 }
+                // Hapus Laravel tracking fields jika ada
+                unset($result['updated_at']);
+                unset($result['created_at']);
                 return $result;
             })->toArray();
 

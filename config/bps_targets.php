@@ -546,20 +546,20 @@ return [
             'params'       => ['domain' => '3305'],
         ],
 
-        // // APS 717
-        // [
-        //     'id'           => 'dataset_aps_717',
-        //     'model'        => 'data',
-        //     'name'         => 'Angka Partisipasi Sekolah (APS) Menurut Kelompok Umur Sekolah di Kabupaten Kebumen',
-        //     'variable_id'  => 717,
-        //     'unit'         => 'Persen',
-        //     'tahun_mulai'  => 2006,
-        //     'tahun_akhir'  => 2023,
-        //     'insight_type' => 'percent_higher_is_better',
-        //     'category'     => 3,
-        //     'enabled'      => true,
-        //     'params'       => ['domain' => '3305'],
-        // ],
+        // APS 717
+        [
+            'id'           => 'dataset_aps_717',
+            'model'        => 'data',
+            'name'         => 'Angka Partisipasi Sekolah (APS) Menurut Kelompok Umur Sekolah di Kabupaten Kebumen',
+            'variable_id'  => 717,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2006,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'percent_higher_is_better',
+            'category'     => 3,
+            'enabled'      => true,
+            'params'       => ['domain' => '3305'],
+        ],
 
     ]
 ];

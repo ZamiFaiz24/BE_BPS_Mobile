@@ -127,12 +127,17 @@ class FetchBpsDataCommand extends Command implements ShouldQueue
                                     'source_note'  => $json['var'][0]['note'] ?? null,
                                     'last_update'  => Carbon::parse($json['last_update']),
                                     'insight_type' => $target['insight_type'] ?? 'default',
-                                    'category'     => isset($target['category']) ? (int)$target['category'] : null, // Ganti jadi 'category'
+                                    'category'     => isset($target['category']) ? (int)$target['category'] : null,
                                 ]
                             );
                             if ($dataset->wasRecentlyCreated) {
                                 $wasRecentlyCreated = true;
                             }
+                        } else {
+                            // Jika dataset sudah ada, update last_update dari BPS
+                            $dataset->update([
+                                'last_update' => Carbon::parse($json['last_update']),
+                            ]);
                         }
 
                         // ...existing code for data processing...
