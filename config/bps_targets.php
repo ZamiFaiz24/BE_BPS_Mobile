@@ -561,5 +561,35 @@ return [
             'params'       => ['domain' => '3305'],
         ],
 
+        // Persentase Rumah Tangga Menurut Penggunaan Fasilitas Tempat Buang Air Besar (812)
+        [
+            'id'           => 'dataset_rumah_tangga_toilet_812',
+            'model'        => 'data',
+            'name'         => 'Persentase Rumah Tangga Menurut Penggunaan Fasilitas Tempat Buang Air Besar di Kabupaten Kebumen',
+            'variable_id'  => 812,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2018,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'percent_higher_is_better',
+            'category'     => 3,
+            'enabled'      => true,
+            'params'       => ['domain' => '3305'],
+        ],
+
+        // Persentase Rumah Tangga Menurut Status Penguasaan Bangunan Tempat Tinggal (790)
+        [
+            'id'           => 'dataset_rumah_tangga_penguasaan_790',
+            'model'        => 'data',
+            'name'         => 'Persentase Rumah Tangga Menurut Status Penguasaan Bangunan Tempat Tinggal di Kabupaten Kebumen',
+            'variable_id'  => 790,
+            'unit'         => 'Persen',
+            'tahun_mulai'  => 2018,
+            'tahun_akhir'  => 2023,
+            'insight_type' => 'percent_higher_is_better',
+            'category'     => 3,
+            'enabled'      => true,
+            'params'       => ['domain' => '3305'],
+        ],
+
     ]
 ];
