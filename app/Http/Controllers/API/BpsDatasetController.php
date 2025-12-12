@@ -116,7 +116,7 @@ class BpsDatasetController extends Controller
         'perumahan' => [
             'title'    => 'Perumahan',
             'display_name' => 'Perumahan', // Short title untuk slider/display
-            'subject'  => 'Perumahan', // Subject sesuai DB
+            'subject'  => 'Pemukiman dan Perumahan', // Subject sesuai DB (bukan hanya "Perumahan")
             'keywords' => [] // Cukup subject match
         ],
         'pertanian' => [
