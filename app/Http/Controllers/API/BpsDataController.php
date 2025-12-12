@@ -87,8 +87,8 @@ class BpsDataController extends Controller
                 });
             }
 
-            // Ambil dataset PERTAMA yang cocok
-            $dataset = $query->first();
+            // Ambil dataset PERTAMA yang cocok (order by ID descending untuk ambil yang terbaru)
+            $dataset = $query->orderBy('id', 'desc')->first();
 
             if ($dataset) {
                 // Ambil nilai terbaru (latest value)
