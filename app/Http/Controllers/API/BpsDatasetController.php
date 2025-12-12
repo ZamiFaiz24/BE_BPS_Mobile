@@ -49,16 +49,19 @@ class BpsDatasetController extends Controller
         // Baris 1 - Mapping disesuaikan dengan subjects yang SEBENARNYA ada di database
         'kependudukan' => [
             'title'    => 'Penduduk',
+            'display_name' => 'Penduduk', // Short title untuk slider/display
             'subject'  => 'Kependudukan dan migrasi', // Subject sesuai DB
             'keywords' => [] // Cukup subject match
         ],
         'tenaga-kerja' => [
             'title'    => 'Tenaga Kerja',
+            'display_name' => 'TPAK', // Short title untuk slider/display
             'subject'  => 'Tenaga Kerja', // Subject sesuai DB
             'keywords' => [] // Cukup subject match
         ],
         'pengangguran' => [
             'title'    => 'Pengangguran',
+            'display_name' => 'TPT', // Short title untuk slider/display
             'subject'  => null, // Tidak ada subject terpisah
             'keywords' => ['pengangguran', 'tpak', 'tpt', 'tidak bekerja']
         ],
@@ -66,16 +69,19 @@ class BpsDatasetController extends Controller
         // Baris 2
         'kemiskinan' => [
             'title'    => 'Kemiskinan',
+            'display_name' => 'Kemiskinan', // Short title untuk slider/display
             'subject'  => null, // Tidak ada di DB
             'keywords' => ['kemiskinan', 'kedalaman kemiskinan', 'keparahan kemiskinan', 'headcount', 'poverty'] // Keywords untuk cari dataset kemiskinan
         ],
         'rasio-gini' => [
             'title'    => 'Rasio GINI',
+            'display_name' => 'GINI', // Short title untuk slider/display
             'subject'  => null,
             'keywords' => ['gini', 'ketimpangan', 'rasio gini', 'inequality'] // Keywords spesifik untuk GINI
         ],
         'ipm' => [
             'title'    => 'IPM',
+            'display_name' => 'IPM', // Short title untuk slider/display
             'subject'  => null, // Tidak ada di DB
             'keywords' => ['ipm', 'indeks pembangunan manusia', 'hdi', 'human development'] // Keywords untuk cari dataset IPM
         ],
@@ -83,16 +89,19 @@ class BpsDatasetController extends Controller
         // Baris 3
         'inflasi' => [
             'title'    => 'Inflasi',
+            'display_name' => 'Inflasi', // Short title untuk slider/display
             'subject'  => null, // Tidak ada di DB
             'keywords' => ['inflasi', 'inflasi umum', 'laju inflasi', 'inflation'] // Keywords untuk cari dataset Inflasi
         ],
         'ekonomi' => [
             'title'    => 'Ekonomi',
+            'display_name' => '', // Kosongkan untuk sekarang
             'subject'  => null, // Kosongkan untuk sekarang
             'keywords' => [] // Tidak ada keywords - skip grid ini
         ],
         'pdrb' => [
             'title'    => 'PDRB',
+            'display_name' => 'PDRB', // Short title untuk slider/display
             'subject'  => null, // Tidak ada subject terpisah
             'keywords' => ['pdrb', 'neraca ekonomi', 'produk domestik bruto', 'gdp'] // Match ke "Neraca Ekonomi"
         ],
@@ -100,16 +109,19 @@ class BpsDatasetController extends Controller
         // Baris 4
         'pendidikan' => [
             'title'    => 'Pendidikan',
+            'display_name' => 'Pendidikan', // Short title untuk slider/display
             'subject'  => 'Pendidikan', // Subject sesuai DB
             'keywords' => [] // Cukup subject match
         ],
         'perumahan' => [
             'title'    => 'Perumahan',
+            'display_name' => 'Perumahan', // Short title untuk slider/display
             'subject'  => 'Perumahan', // Subject sesuai DB
             'keywords' => [] // Cukup subject match
         ],
         'pertanian' => [
             'title'    => 'Pertanian',
+            'display_name' => 'Pertanian', // Short title untuk slider/display
             'subject'  => 'Pertanian', // Subject sesuai DB
             'keywords' => [] // Cukup subject match
         ]

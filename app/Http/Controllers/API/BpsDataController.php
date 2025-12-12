@@ -101,6 +101,7 @@ class BpsDataController extends Controller
                 $result[$slug] = [
                     'slug' => $slug,
                     'category_title' => $slotConfig['title'],
+                    'display_name' => $slotConfig['display_name'], // Short title untuk slider
                     'dataset_id' => $dataset->id,
                     'dataset_code' => $dataset->dataset_code,
                     'dataset_name' => $dataset->dataset_name,
